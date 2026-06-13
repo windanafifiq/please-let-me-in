@@ -12,7 +12,7 @@ const config = {
   type: Phaser.AUTO,
   parent: 'game-root',
   backgroundColor: '#05060a',
-  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: 1280, height: 720 },
+  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: 1280, height: 720, forceOrientation: true, orientation: Phaser.Scale.LANDSCAPE },
   render: { antialias: true, pixelArt: false },
   scene: [BootScene, MenuScene, NameScene, IntroScene, GameScene, EndScene, CreditScene, LoreScene],
 };
