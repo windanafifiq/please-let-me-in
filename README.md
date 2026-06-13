@@ -1,4 +1,4 @@
-# PLEASE, LET ME IN! — Lantai 7
+<!-- # PLEASE, LET ME IN! — Lantai 7
 
 Visual-novel **observation-duty** bertema thriller wabah, ditenagai **4 Finite
 State Machine** yang saling memengaruhi. Kamu menjaga pintu Lantai 7: tiap hari
@@ -127,4 +127,4 @@ ketegangan & misteri ("siapa yang salah aku loloskan?").
   kartu "wabah pecah semalam" → langsung ending KALAH.
 - Semua keputusan (benar/salah + kondisi asli tiap orang) baru diungkap penuh
   di layar ending (recap). Ini juga memperkuat realisme simulasi skrining wabah:
-  konsekuensi muncul belakangan, seperti masa inkubasi penyakit nyata.
+  konsekuensi muncul belakangan, seperti masa inkubasi penyakit nyata. -->
