@@ -3,7 +3,7 @@
    Palette: ink #0b0c12 · panel #16141c · gold #e8c468 · blood #c4555e · teal #6fae9a · amber #d8924a */
 
 :root {
-  --ink: #0b0c12;
+  --ink: #000000;
   --panel: #16141c;
   --panel-2: #1d1b25;
   --line: #322e3c;
@@ -335,15 +335,15 @@ html, body {
   display: flex; flex-direction: column; align-items: center;
   padding: 24px 6vw 18px;
 }
-.lore-head { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 30px; color: #f2e6c9; letter-spacing: 3px; margin-bottom: 14px; }
+.lore-head { font-family: 'Creepster', cursive; font-weight: 800; font-size: 60px; color: #f2e6c9; letter-spacing: 3px; margin-bottom: 14px; }
 .lore-scroll {
   flex: 1; overflow-y: auto; max-width: 760px; width: 100%;
   display: flex; flex-direction: column; gap: 16px; padding-right: 8px;
 }
 .lore-scroll::-webkit-scrollbar { width: 8px; }
 .lore-scroll::-webkit-scrollbar-thumb { background: #2a2733; border-radius: 4px; }
-.lore-sec h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; color: var(--gold); margin: 0 0 6px; }
-.lore-sec p { font-size: 14px; line-height: 1.65; color: #c9c3d2; margin: 0 0 8px; }
+.lore-sec h3 { font-family: 'Special Elite', cursive; font-weight: 700; font-size: 25px; color: var(--gold); margin: 0 0 6px; }
+.lore-sec p { font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.65; color: #c9c3d2; margin: 0 0 8px; }
 .lore-sec b { color: #f2e6c9; }
 .lore-note { font-size: 12.5px !important; color: var(--teal) !important; font-style: italic; }
 .lore-sources ul { margin: 4px 0 0; padding-left: 18px; }

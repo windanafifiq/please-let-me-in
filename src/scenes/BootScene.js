@@ -17,10 +17,12 @@ export default class BootScene extends Phaser.Scene {
     const W = this.scale.width, H = this.scale.height;
     this.add.rectangle(W / 2, H / 2 + 30, 320, 6, 0x2a2730);
     const bar = this.add.rectangle(W / 2 - 160, H / 2 + 30, 4, 6, 0xe8c468).setOrigin(0, 0.5);
-    this.add.text(W / 2, H / 2 - 24, 'FLOOR 7', {
+    this.add.text(W / 2, H / 2 - 24, 'PLEASE WAIT', {
       fontFamily: 'Syne, sans-serif', fontSize: '40px', color: '#e8c468', fontStyle: 'bold',
     }).setOrigin(0.5);
     this.load.on('progress', (p) => { bar.width = 4 + 316 * p; });
+    this.load.image('bg-plain', 'assets/bg/door.png');
+    this.load.image('bg-horror', 'assets/bg/door2.png');
 
     // Coba muat foto asli (silently ignored bila tidak ada).
     // Catat key yg dicoba agar kita tahu mana yg berhasil di create().
@@ -35,7 +37,7 @@ export default class BootScene extends Phaser.Scene {
       }
     }
     // Latar opsional
-    this.load.image('photo-door', 'assets/bg/door.png');
+    this.load.image('photo-door', 'assets/bg/susun.png');
     // Foto kredit (opsional) — taruh di assets/credits/
     this.load.image('credit-maker1', 'assets/credits/maker1.png');
     this.load.image('credit-maker2', 'assets/credits/maker2.png');

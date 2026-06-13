@@ -1,6 +1,3 @@
-// CreditScene.js — Halaman Kredit (3 kolom): Pembuat 1, Pembuat 2, Dosen.
-// Foto + Nama + NRP + Email untuk pembuat; Nama + Email untuk dosen.
-// Isi placeholder; ganti dengan data asli + taruh foto di assets/credits/.
 export default class CreditScene extends Phaser.Scene {
   constructor() { super('CreditScene'); }
 
@@ -10,12 +7,11 @@ export default class CreditScene extends Phaser.Scene {
     this.add.image(W / 2, H / 2, 'bg-plain').setDisplaySize(W, H).setAlpha(0.6);
     this.add.rectangle(W / 2, H / 2, W, H, 0x05060a, 0.55);
 
-    // Data kredit — GANTI dengan data asli saat finishing.
     const makers = [
-      { role: 'Pembuat 1', name: 'Nama Mahasiswa 1', nrp: 'NRP 5025XXXXXX', email: 'mahasiswa1@its.ac.id', photo: 'credit-maker1' },
-      { role: 'Pembuat 2', name: 'Nama Mahasiswa 2', nrp: 'NRP 5025XXXXXX', email: 'mahasiswa2@its.ac.id', photo: 'credit-maker2' },
+      { role: 'Anggota 1', name: 'Winda Nafiqih Irawan', nrp: 'NRP 5025231065', email: 'windaforkwork@gmail.com', photo: 'credit-maker1' },
+      { role: 'Anggota 2', name: 'Miskiyah', nrp: 'NRP 5025231119', email: 'ayamiskiyah46@gmail.com', photo: 'credit-maker2' },
     ];
-    const lecturer = { role: 'Dosen Pengampu', name: 'Nama Dosen', email: 'dosen@its.ac.id', photo: 'credit-lecturer' };
+    const lecturer = { role: 'Dosen Pengampu Mata Kuliah Game Simulasi dan Edukasi', name: 'Imam Kuswardayan, S.Kom., MT.', email: 'imam@its.ac.id', photo: 'credit-lecturer' };
 
     const reg = this.registry.get('photoRegistry') || {};
     const photoUrl = (key) => this.textures.exists(key) ? this.textures.getBase64(key) : null;
@@ -40,7 +36,7 @@ export default class CreditScene extends Phaser.Scene {
     root.innerHTML = `
       <div class="credit-screen">
         <div class="credit-head">KREDIT</div>
-        <div class="credit-task">Tugas Mata Kuliah<br><b>Game Edukasi dan Simulasi</b><br>Informatika ITS 2026</div>
+        <div class="credit-task">Tugas Final Project Mata Kuliah<br><b>Game Edukasi dan Simulasi</b><br>Teknik Informatika ITS 2026</div>
         <div class="credit-grid">
           ${card(makers[0], true)}
           ${card(makers[1], true)}

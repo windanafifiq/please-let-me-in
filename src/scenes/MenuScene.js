@@ -8,49 +8,179 @@ export default class MenuScene extends Phaser.Scene {
   create() {
     const W = this.scale.width, H = this.scale.height;
     UI.unmount();
-    this.add.image(W / 2, H / 2, 'bg-plain').setDisplaySize(W, H).setAlpha(0.9);
+
+    const bgNormal = this.add
+      .image(W / 2, H / 2, 'bg-plain')
+      .setDisplaySize(W, H);
+
+    const bgHorror = this.add
+      .image(W / 2, H / 2, 'bg-horror')
+      .setDisplaySize(W, H)
+      .setAlpha(0)
+      .setDepth(5);
+
+    // Overlay gelap
     this.add.rectangle(W / 2, H / 2, W, H, 0x05060a, 0.42);
+
+    // Flash putih untuk petir
+    const flash = this.add
+      .rectangle(W / 2, H / 2, W, H, 0xffffff)
+      .setAlpha(0)
+      .setDepth(20);
+
+    // Efek petir
+    const triggerLightning = () => {
+
+      // cahaya petir lembut
+      flash.setAlpha(0.12);
+
+      this.cameras.main.shake(250, 0.002);
+
+      // door2 muncul perlahan
+      this.tweens.add({
+        targets: bgHorror,
+        alpha: 0.3,
+        duration: 180,
+        ease: 'Sine.out',
+
+        onComplete: () => {
+
+          // tahan sebentar supaya sempat terlihat
+          this.time.delayedCall(250, () => {
+
+            // hilang perlahan
+            this.tweens.add({
+              targets: bgHorror,
+              alpha: 0,
+              duration: 350,
+              ease: 'Sine.in'
+            });
+
+            this.tweens.add({
+              targets: flash,
+              alpha: 0,
+              duration: 350
+            });
+
+          });
+
+        }
+      });
+
+      this.time.delayedCall(
+        Phaser.Math.Between(5000, 10000),
+        triggerLightning
+      );
+    };
+
+    this.time.delayedCall(3000, triggerLightning);
+
+    // Partikel
     this.add.particles(0, 0, 'dot', {
-      x: { min: 0, max: W }, y: { min: 0, max: H }, lifespan: 6000,
-      speedY: { min: -8, max: -20 }, scale: { start: 0.5, end: 0 },
-      alpha: { start: 0.32, end: 0 }, frequency: 260, tint: 0xe8c468,
+      x: { min: 0, max: W },
+      y: { min: 0, max: H },
+      lifespan: 6000,
+      speedY: { min: -8, max: -20 },
+      scale: { start: 0.5, end: 0 },
+      alpha: { start: 0.32, end: 0 },
+      frequency: 260,
+      tint: 0xe8c468,
     });
 
     const title = this.add.text(W / 2, H * 0.26, 'PLEASE, LET ME IN!', {
-      fontFamily: 'Syne, sans-serif', fontSize: '60px', color: '#f2e6c9', fontStyle: 'bold',
+      fontFamily: '"Creepster", cursive',
+      fontSize: '80px',
+      color: '#B11226',
+      fontStyle: 'bold',
     }).setOrigin(0.5);
-    this.add.text(W / 2, H * 0.26 + 50, 'L A N T A I   7', {
-      fontFamily: 'Syne, sans-serif', fontSize: '18px', color: '#e8c468', letterSpacing: 8,
-    }).setOrigin(0.5);
+
+    // RGB layers
+    const titleRed = this.add.text(
+      W / 2, H * 0.26,
+      'PLEASE, LET ME IN!',
+      {
+        fontFamily: '"Creepster", cursive',
+        fontSize: '80px',
+        color: '#ff2d2d'
+      }
+    ).setOrigin(0.5).setAlpha(0);
+
+    const titleBlue = this.add.text(
+      W / 2, H * 0.26,
+      'PLEASE, LET ME IN!',
+      {
+        fontFamily: '"Creepster", cursive',
+        fontSize: '80px',
+        color: '#00d9ff'
+      }
+    ).setOrigin(0.5).setAlpha(0);
+
+    title.setDepth(10);
+    titleRed.setDepth(9);
+    titleBlue.setDepth(9);
+
     this.add.text(W / 2, H * 0.40,
-      'Wabah bioweapon mengubah orang jadi zombie — tapi mereka tampak\n' +
-      'normal berjam-jam. Sebagai penjaga rusun, periksa tiap penghuni\n' +
-      'yang mengetuk, lalu putuskan: buka pintu, atau tolak mereka.',
-      { fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#a9a2b3', align: 'center', lineSpacing: 6 }
+      'Satu keputusanmu yang salah,\n' +
+      'Satu gedung yang akan menanggung akibatnya!',
+      {
+        fontFamily: 'Special Elite, cursive',
+        fontSize: '20px',
+        color: '#B8B3C2',
+        align: 'center',
+        lineSpacing: 6
+      }
     ).setOrigin(0.5);
 
     this.tweens.add({ targets: title, alpha: { from: 1, to: 0.82 }, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+
+    const glitch = () => {
+
+      const offset = Phaser.Math.Between(2, 5);
+
+      titleRed.setPosition(title.x - offset, title.y);
+      titleBlue.setPosition(title.x + offset, title.y);
+
+      titleRed.setAlpha(0.7);
+      titleBlue.setAlpha(0.7);
+
+      title.x += Phaser.Math.Between(-2, 2);
+
+      this.time.delayedCall(80, () => {
+
+        titleRed.setAlpha(0);
+        titleBlue.setAlpha(0);
+
+        title.x = W / 2;
+
+        this.time.delayedCall(
+          Phaser.Math.Between(1000, 3000),
+          glitch
+        );
+      });
+    };
+
+    glitch();
 
     const hasSave = SaveManager.has();
     const sum = hasSave ? SaveManager.summary() : null;
 
     const btns = [];
-    btns.push({ label: 'MULAI BARU', action: () => this.startNew() });
+    btns.push({ label: 'START GAME', action: () => this.startNew() });
     if (hasSave) {
-      btns.push({ label: `LANJUTKAN  (Hari ${sum.day})`, action: () => this.continueGame(), accent: true });
+      btns.push({ label: `CONTINUE  (Day ${sum.day})`, action: () => this.continueGame(), accent: true });
     }
-    btns.push({ label: 'LORE & REFERENSI', action: () => this.scene.start('LoreScene'), ghost: true });
-    btns.push({ label: 'KREDIT', action: () => this.scene.start('CreditScene'), ghost: true });
+    btns.push({ label: 'LORE & REFERENCE', action: () => this.scene.start('LoreScene'), ghost: true });
+    btns.push({ label: 'CREDIT', action: () => this.scene.start('CreditScene'), ghost: true });
 
     let y = H * 0.56;
     const gap = btns.length >= 5 ? 56 : 62;
     for (const b of btns) {
-      const bg = b.ghost ? 0x16141c : (b.accent ? 0x2f6a5c : 0xe8c468);
+      const bg = b.ghost ? 0x16141c : (b.accent ? 0x6e0b14 : 0xe8c468);
       const fg = b.ghost ? '#e8c468' : (b.accent ? '#ffffff' : '#16141c');
       const rect = this.add.rectangle(W / 2, y, 280, 46, bg).setInteractive({ useHandCursor: true });
       if (b.ghost) rect.setStrokeStyle(1, 0x35313f);
       const txt = this.add.text(W / 2, y, b.label, {
-        fontFamily: 'Syne, sans-serif', fontSize: '15px', color: fg, fontStyle: 'bold',
+        fontFamily: 'syne, sans-serif', fontSize: '15px', color: fg, fontStyle: 'bold',
       }).setOrigin(0.5);
       rect.on('pointerover', () => { rect.setScale(1.04); txt.setScale(1.04); });
       rect.on('pointerout', () => { rect.setScale(1); txt.setScale(1); });
@@ -58,7 +188,7 @@ export default class MenuScene extends Phaser.Scene {
       y += gap;
     }
 
-    this.add.text(W / 2, H - 24, 'Tugas Game Edukasi & Simulasi · Informatika ITS 2026',
+    this.add.text(W / 2, H - 24, 'Tugas Final Projek Game Edukasi & Simulasi · Teknik Informatika ITS 2026',
       { fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#5e5868' }).setOrigin(0.5);
   }
 
