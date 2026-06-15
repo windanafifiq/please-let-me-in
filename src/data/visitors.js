@@ -1,559 +1,238 @@
 // visitors.js
-// Pengunjung Lantai 7. Setiap orang adalah satu "kasus" wawancara.
+// Data 6 pengunjung untuk game pemeriksaan gejala (1 hari penuh).
 //
-// MODEL:
-// - health: state awal FSM kesehatan (TERSEMBUNYI). 'sehat' | 'terinfeksi'
-// - demeanor: konfigurasi DemeanorFSM (start, patience, guardedness)
-// - lines: skrip dialog per-state sikap NPC. Jika state tak ada, pakai 'default'.
-// - tells: petunjuk kondisi yang terungkap saat aksi tertentu. Sebagian hanya
-//   muncul setelah NPC mencapai state tertentu (whenState).
+// MODEL DEDUKSI:
+//   Cacar (VRS-24) dipastikan jika: RUAM MENYEBAR (banyak titik) + DEMAM (>=37.5)
+//   + minimal 1 GEJALA PENDUKUNG (mata merah, tensi rendah, pucat, kebotakan).
+//   Satu-dua bintik terpisah BUKAN ruam menyebar. Gejala tunggal punya alasan
+//   alternatif (heat-stroke, anemia, imunisasi) — pemain harus baca POLA.
 //
-// Tidak ada kuota pemeriksaan — pemain bebas menggali sampai puas.
-
-import { INPUT } from '../fsm/DemeanorFSM.js';
-
-export const SIGNAL = { CLEAN: 'clean', SUSPECT: 'suspect', NEUTRAL: 'neutral' };
-
-export const ACTIONS = {
-  ASK_PURPOSE: 'ask_purpose',
-  ASK_SYMPTOM: 'ask_symptom',
-  DEMAND_ID: 'demand_id',
-  DEMAND_ARM: 'demand_arm',
-  PRESS_SOFT: 'press_soft',
-  PRESS_HARD: 'press_hard',
-  REASSURE: 'reassure',
-  CROSS_LOG: 'cross_log',
-  OBSERVE: 'observe',
-};
-
-export const ACTION_LABELS = {
-  ask_purpose: 'Tanya keperluan',
-  ask_symptom: 'Tanya gejala',
-  demand_id: 'Minta identitas',
-  demand_arm: 'Periksa lengan',
-  press_soft: 'Desak halus',
-  press_hard: 'Desak keras',
-  reassure: 'Tenangkan',
-  cross_log: 'Cek catatan gedung',
-  observe: 'Amati diam-diam',
-};
-
-export const ACTION_INPUT = {
-  ask_purpose: INPUT.PROBE,
-  ask_symptom: INPUT.PROBE,
-  demand_id: INPUT.DEMAND,
-  demand_arm: INPUT.DEMAND,
-  press_soft: INPUT.PRESS_SOFT,
-  press_hard: INPUT.PRESS_HARD,
-  reassure: INPUT.REASSURE,
-  cross_log: INPUT.PROBE,
-  observe: INPUT.PROBE,
-};
+// STRUKTUR:
+//   health: 'cacar' | 'sehat' | 'kondisi_lain'  → kebenaran tersembunyi (HealthFSM)
+//   intro, claim: perkenalan & alasan datang
+//   barriers: penghalang fisik (AksesFSM) — { id, label }
+//   appearance: gejala terlihat langsung saat observasi (gratis)
+//   exams: hasil tiap pemeriksaan { value, note, gatedBy }
+//          gatedBy = id penghalang yang harus dibuka dulu (atau null)
+//   verdict: 'reject' (cacar) | 'accept' (aman) — kebenaran utk penilaian
+//
+// Catatan: TIDAK ada warna/flag di data. Log menampilkan data mentah + catatan
+// medis netral; pemain menyimpulkan sendiri.
 
 export const VISITORS = [
-  // ============ HARI 1 ============
+  // ============ 1. ARUNIKA — CACAR (halus, tahap awal) ============
   {
-    id: 'v01', name: 'Deni', floor: 7, color: '#6c98b0',
-    health: 'terinfeksi',
-    demeanor: { start: 'tenang', patience: 70, guardedness: 20 },
-    intro: 'Pria muda dengan tas perkakas. Wajahnya pucat, napas pendek.',
-    claim: 'Tukang servis AC. Tadi naik-turun semua lantai, minta balik ke unit.',
-    lines: {
-      ask_purpose: { default: '"Mau balik ke unit saya, Bang. Capek naik tangga 7 lantai."' },
-      ask_symptom: { default: '"Cuma capek kok. Sumpah, nggak sakit." (Suaranya serak.)' },
-      demand_id: { default: '"Ini, kartu teknisi gedung." (Diserahkan tanpa ragu.)' },
-      demand_arm: { default: '"Boleh, periksa aja." (Menyingkap lengan — kulit berkeringat dingin.)' },
-      press_soft: { default: '"...Iya, badan saya agak panas dari siang. Tapi cuma masuk angin kan?"' },
-      observe: { default: 'Sesekali menyeka dahi. Bahunya turun, lelah betul.' },
-      cross_log: { default: 'Log lift mati sejak pagi — ia memang naik tangga. Cerita cocok.' },
+    id: 'v01',
+    name: 'Arunika',
+    age: 30,
+    job: 'Pegawai kantoran',
+    floor: 3,
+    color: '#c98fa0',
+    health: 'cacar',
+    verdict: 'reject',
+
+    intro: 'Perempuan muda berpakaian rapi, mengenakan syal, masker, topi, dan jaket lengan panjang. Tertutup rapat untuk malam yang cukup gerah.',
+    claim: 'Mengaku pegawai kantoran penghuni lantai 3. Baru pulang belanja dari mall.',
+
+    // Penghalang dibuka BERURUTAN. 'stage' = nama gambar setelah penghalang ini dibuka.
+    // Gambar awal (semua tertutup) = 'full'.
+    barriers: [
+      { id: 'masker', label: 'lepas masker', stage: 'nomask' },
+      { id: 'syal_jaket', label: 'lepas syal & jaket lengan panjang', stage: 'arm' },
+      { id: 'topi', label: 'lepas topi', stage: 'open' },
+    ],
+
+    appearance: 'Tubuhnya tertutup hampir seluruhnya. Gerak-geriknya tampak sedikit lelah.',
+
+    exams: {
+      observasi: { value: 'Setelah masker dibuka, wajahnya tampak sedikit pucat. Belum terlihat ruam di wajah.', note: 'Pucat bisa banyak sebabnya.', gatedBy: 'masker' },
+      suhu: { value: '37.5°C', note: '37.5–38°C tergolong demam ringan. Bisa juga akibat terpapar panas.', gatedBy: null },
+      ruam: { value: 'Di beberapa titik lengan dan leher terdapat ruam tipis yang menyebar.', note: 'Ruam menyebar di banyak titik.', gatedBy: 'syal_jaket' },
+      mata: { value: 'Mata tampak baik-baik saja.', note: null, gatedBy: null },
+      tekanan: { value: '90/60 mmHg', note: '90/60 adalah batas bawah normal.', gatedBy: null },
+      rambut: { value: 'Rambut masih lebat, tidak ada kerontokan.', note: null, gatedBy: 'topi' },
     },
-    tells: {
-      ask_symptom: { signal: SIGNAL.SUSPECT, note: 'Suara serak, menyangkal terlalu cepat.' },
-      demand_arm:  { signal: SIGNAL.SUSPECT, note: 'Keringat dingin, lengan gemetar.' },
-      press_soft:  { signal: SIGNAL.SUSPECT, note: 'Mengakui badan panas sejak siang.' },
-      observe:     { signal: SIGNAL.SUSPECT, note: 'Tanda demam: menyeka dahi, napas pendek.' },
-      demand_id:   { signal: SIGNAL.NEUTRAL, note: 'Identitas asli, lantai 7 benar.' },
-      cross_log:   { signal: SIGNAL.NEUTRAL, note: 'Cerita konsisten dengan log gedung.' },
-    },
-    onAccept: { trust: 6, infectionRisk: 0.9, log: 'Deni masuk. Malamnya ia demam tinggi dan menulari unit sebelah.' },
-    onReject: { trust: -10, infectionRisk: 0.0, log: 'Deni kau tolak. Ia menggedor lama sebelum turun ke tangga.' },
-    truthAccept: 'Kau membawa pembawa wabah ke dalam.',
-    truthReject: 'Tepat — ia memang sumber pertamanya.',
-  },
-  {
-    id: 'v02', name: 'Ibu Sari', floor: 7, color: '#c97b84',
-    health: 'sehat',
-    demeanor: { start: 'tenang', patience: 90, guardedness: 10 },
-    intro: 'Wanita paruh baya membawa kantong belanja. Lelah tapi tenang.',
-    claim: 'Pensiunan bidan unit 704. Pulang belanja, minta masuk ke lantainya.',
-    lines: {
-      ask_purpose: { default: '"Mau pulang ke unit, Nak. Belanjaan ini keburu basi."' },
-      ask_symptom: { default: '"Tidak ada keluhan. Cuma pegal kaki." (Mantap, tenang.)' },
-      demand_id: { default: '"Tentu." (Menyerahkan KTP & kartu penghuni 704.)' },
-      demand_arm: { default: '"Silakan periksa." (Lengan bersih, kulit normal, hangat wajar.)' },
-      press_soft: { default: '"Saya jujur kok, Nak. Saya bidan, tahu kalau diri sendiri sakit."' },
-      observe: { default: 'Berdiri tegak, napas teratur. Tidak ada tanda sakit.' },
-      cross_log: { default: 'Tetangga membenarkan ia keluar belanja pagi tadi.' },
-    },
-    tells: {
-      ask_symptom: { signal: SIGNAL.CLEAN, note: 'Tegas, tidak gugup.' },
-      demand_id: { signal: SIGNAL.CLEAN, note: 'Identitas 704 valid.' },
-      demand_arm: { signal: SIGNAL.CLEAN, note: 'Kulit & suhu normal.' },
-      observe: { signal: SIGNAL.CLEAN, note: 'Fisik sehat, postur tegak.' },
-      cross_log: { signal: SIGNAL.CLEAN, note: 'Cerita dibenarkan tetangga.' },
-    },
-    onAccept: { trust: 12, infectionRisk: 0.0, log: 'Ibu Sari masuk. Ia langsung membantu merawat yang sakit.' },
-    onReject: { trust: -18, infectionRisk: 0.0, log: 'Kau menolak penghuni sah yang sehat. Penghuni lain marah.' },
-    truthAccept: 'Kau menerima sekutu — bidan yang bisa merawat.',
-    truthReject: 'Kau menolak orang sehat. Kepercayaan gedung runtuh.',
+
+    truthReject: 'Arunika terinfeksi VRS-24. Ruam menyebar, demam ringan, mata merah, dan tekanan rendah — pola khas cacar tahap awal. Keputusan tepat.',
+    truthAccept: 'Kau meloloskan Arunika yang terinfeksi. Gejalanya halus, tapi polanya jelas cacar. Wabah masuk.',
   },
 
-  // ============ HARI 2 ============
+  // ============ 2. GOPAL — SEHAT (bersih, penghalang = red herring) ============
   {
-    id: 'v03', name: 'Rina', floor: 6, color: '#d18fb0',
+    id: 'v02',
+    name: 'Gopal',
+    age: 20,
+    job: 'Mahasiswa semester 4',
+    floor: 2,
+    color: '#7fb088',
     health: 'sehat',
-    demeanor: { start: 'defensif', patience: 45, guardedness: 35 },
-    falseNervous: true,
-    intro: 'Gadis muda terengah, jelas habis berlari. Tangannya gemetar.',
-    claim: 'Mahasiswa lantai 6. Panik dengar ada yang sakit, minta tempat aman.',
-    lines: {
-      ask_purpose: { default: '"Aku... aku cuma takut! Boleh nggak aku di sini dulu?"' },
-      ask_symptom: {
-        defensif: '"Nggak sakit kok! Beneran! Cuma takut..." (Bicara cepat, terbata.)',
-        default: '"Aku sehat, sumpah. Tadi cuma lari karena panik."',
-      },
-      demand_id: {
-        defensif: '"I-ini kartunya..." (Gemetar menyerahkan kartu mahasiswa + penghuni 6.)',
-        default: '"Ini kartuku, lantai 6." (Lebih tenang sekarang.)',
-      },
-      demand_arm: { default: '"Boleh diperiksa." (Lengan kering, hangat normal — cuma gemetar takut.)' },
-      reassure: { default: '"...Makasih. Aku tenang sedikit. Aku beneran nggak sakit kok."' },
-      press_soft: { default: '"Aku jujur! Cuma denger tetangga batuk-batuk, langsung panik lari ke atas."' },
-      observe: { default: 'Gemetar, tapi tidak batuk, tidak menyeka keringat. Murni cemas.' },
-      cross_log: { default: 'Ia terdaftar lantai 6. Tidak ada kontradiksi.' },
+    verdict: 'accept',
+
+    intro: 'Mahasiswa semester 4 mengenakan jaket hoodie dengan kupluk menutupi kepala. Tampak biasa saja, sedikit berkeringat.',
+    claim: 'Tinggal bersama neneknya di lantai 2. Baru dari perpustakaan mengerjakan final project.',
+
+    barriers: [
+      { id: 'hoodie', label: 'lepas jaket hoodie', stage: 'open' },
+    ],
+
+    appearance: 'Terlihat normal. Ada sedikit keringat, wajar untuk yang baru berjalan.',
+
+    exams: {
+      observasi: { value: 'Tidak pucat. Berkeringat ringan, tampak seperti habis berjalan/beraktivitas.', note: 'Keringat ringan biasa setelah aktivitas.', gatedBy: null },
+      suhu: { value: '36.5°C', note: 'Suhu normal.', gatedBy: null },
+      ruam: { value: 'Setelah hoodie dibuka, ia memakai kaus pendek. Kulit bersih, tidak ada ruam.', note: null, gatedBy: 'hoodie' },
+      mata: { value: 'Mata jernih, normal.', note: null, gatedBy: null },
+      tekanan: { value: '120/80 mmHg', note: 'Tekanan normal untuk dewasa.', gatedBy: null },
+      rambut: { value: 'Rambut lebat dan normal.', note: null, gatedBy: 'hoodie' },
     },
-    tells: {
-      ask_symptom: { signal: SIGNAL.SUSPECT, note: 'Gugup, terbata — TAPI mungkin cuma takut.', whenState: 'defensif' },
-      reassure: { signal: SIGNAL.CLEAN, note: 'Setelah tenang, jelas tidak sakit.' },
-      demand_arm: { signal: SIGNAL.CLEAN, note: 'Kulit & suhu normal, gemetar karena panik.' },
-      observe: { signal: SIGNAL.CLEAN, note: 'Tidak ada gejala fisik, hanya cemas.' },
-      cross_log: { signal: SIGNAL.CLEAN, note: 'Terdaftar lantai 6, konsisten.' },
-    },
-    onAccept: { trust: 10, infectionRisk: 0.0, log: 'Rina masuk. Setelah tenang, ia jadi kurir antar-lantai yang gesit.' },
-    onReject: { trust: -14, infectionRisk: 0.0, log: 'Rina kau usir. Ia menangis di koridor sebelum hilang ke bawah.' },
-    truthAccept: 'Ia hanya ketakutan — kau menyelamatkan orang sehat.',
-    truthReject: 'Kegugupan menipumu. Ia sehat, dan kau mengusirnya.',
-  },
-  {
-    id: 'v04', name: 'Joko', floor: 4, color: '#9b8466',
-    health: 'terinfeksi',
-    demeanor: { start: 'tenang', patience: 30, guardedness: 75 },
-    contradiction: true,
-    intro: 'Pria tegap berjaket tebal — padahal koridor panas. Senyumnya lebar.',
-    claim: 'Sopir lantai 4. "Baru pulang kerja", minta lewat ambil barang.',
-    lines: {
-      ask_purpose: { default: '"Mau ambil barang di unit, Bos. Bentar aja." (Senyum terlalu lebar.)' },
-      ask_symptom: { default: '"Sehat walafiat! Kayak kuda." (Menjawab terlalu cepat.)' },
-      demand_id: {
-        tenang: '"Aduh, KTP ketinggalan di mobil, Bos. Percaya aja lah."',
-        defensif: '"Beneran nggak bawa! Masa gini doang nggak percaya?"',
-        mengelak: '"Kartunya... hilang. Iya, hilang kemarin. Pokoknya saya penghuni sini."',
-        membuka: '"...Ya udah, ini." (Menyerahkan kartu — foto lama, tapi asli lantai 4.)',
-      },
-      demand_arm: {
-        tenang: '"Lengan? Buat apa? Nggak usah lah." (Menarik tangan.)',
-        mengelak: '"Nggak mau! Kulit saya iritasi, malu." (Menutupi lengan rapat.)',
-        membuka: '(Terpaksa menyingkap — kulit kemerahan, lengan hangat. Mengalihkan tatapan.)',
-      },
-      press_soft: {
-        mengelak: '"...Hh. Oke. Saya emang nggak enak badan dikit. Tapi masih kuat!"',
-        default: '"Apaan sih, saya sehat!"',
-      },
-      press_hard: {
-        mengelak: '"JANGAN SOK NGATUR! Saya mau masuk titik!" (Wajah merah, mengepalkan tangan.)',
-        default: '"Hee, hati-hati ngomong."',
-      },
-      observe: { default: 'Jaket tebal di cuaca panas. Sesekali menahan batuk di balik tangan.' },
-      cross_log: { default: 'Log gedung: ia TIDAK keluar kerja hari ini. Ceritanya bohong.' },
-    },
-    tells: {
-      ask_symptom: { signal: SIGNAL.NEUTRAL, note: 'Menjawab terlalu cepat — mencurigakan tapi belum pasti.' },
-      demand_id: { signal: SIGNAL.SUSPECT, note: 'Mengaku KTP "hilang" — klasik mengelak.', whenState: 'mengelak' },
-      demand_arm: { signal: SIGNAL.SUSPECT, note: 'Kulit kemerahan, lengan hangat.', whenState: 'membuka' },
-      press_soft: { signal: SIGNAL.SUSPECT, note: 'Akhirnya mengaku "nggak enak badan".', whenState: 'mengelak' },
-      observe: { signal: SIGNAL.SUSPECT, note: 'Jaket tebal menyembunyikan demam; menahan batuk.' },
-      cross_log: { signal: SIGNAL.SUSPECT, note: 'KONTRADIKSI: ceritanya tidak cocok log.' },
-    },
-    onAccept: { trust: 4, infectionRisk: 0.85, log: 'Joko masuk. Ia menyembunyikan demam dan menulari lantai 4 diam-diam.' },
-    onReject: { trust: -8, infectionRisk: 0.0, log: 'Joko kau tolak. Ia mengumpat dan menendang pintu.' },
-    truthAccept: 'Ia berbohong soal sehat — wabah menyebar diam-diam.',
-    truthReject: 'Kebohongannya terbongkar. Kau menghentikan satu penyebar.',
+
+    truthAccept: 'Gopal sehat. Hoodie hanya gaya berpakaian, bukan penyembunyi gejala. Keputusan tepat.',
+    truthReject: 'Kau menolak Gopal yang sehat. Penampilan tertutup ternyata tak menyembunyikan apa pun.',
   },
 
-  // ============ HARI 3 ============
+  // ============ 3. KAKEK HASAN — SEHAT (jebakan: demam+botak tanpa ruam) ============
   {
-    id: 'v05', name: 'Pak Hadi', floor: 5, color: '#a87f6b',
-    health: 'terinfeksi',
-    demeanor: { start: 'tenang', patience: 85, guardedness: 15 },
-    moral: true,
-    intro: 'Lelaki renta bersandar tongkat. Suara nyaris bisikan, napas berat.',
-    claim: 'Kakek tertua di gedung, lantai 5. Lemah, minta tempat berbaring.',
-    lines: {
-      ask_purpose: { default: '"Izinkan aku berbaring sebentar, Nak... kakiku tak kuat lagi."' },
-      ask_symptom: { default: '"Dadaku sesak sejak kemarin... mungkin sudah waktunya." (Jujur, lirih.)' },
-      demand_id: { default: '"Tentu, ini." (Kartu penghuni 503. Semua mengenalnya.)' },
-      demand_arm: { default: '(Menyingkap lengan tua — kulit dingin, nadi cepat dan lemah.)' },
-      press_soft: { default: '"Aku tak akan berbohong di usia ini. Aku memang sakit. Tapi aku takut sendirian."' },
-      reassure: { default: '"Terima kasih, Nak. Kau orang baik." (Matanya berkaca.)' },
-      observe: { default: 'Batuk kering berulang. Jelas terinfeksi — tapi tak berdaya.' },
-      cross_log: { default: 'Ceritanya konsisten. Ia jujur soal sakitnya.' },
+    id: 'v03',
+    name: 'Kakek Hasan',
+    age: 60,
+    job: 'Pensiunan guru',
+    floor: 2,
+    color: '#a87f6b',
+    health: 'kondisi_lain',   // heat-stroke ringan, BUKAN cacar
+    verdict: 'accept',
+
+    intro: 'Lelaki tua mengenakan topi dan kaus singlet. Keringatnya bercucuran cukup banyak.',
+    claim: 'Pensiunan guru, tinggal sendiri di lantai 2. Baru mengunjungi kawan lamanya.',
+
+    barriers: [
+      { id: 'topi', label: 'lepas topi', stage: 'open' },
+    ],
+
+    appearance: 'Berkeringat banyak. Tampak kepanasan, napas sedikit terengah.',
+
+    exams: {
+      observasi: { value: 'Keringat berlebih, tetapi tidak pucat. Wajah justru kemerahan seperti kepanasan.', note: 'Kemerahan karena panas berbeda dari pucat sakit.', gatedBy: null },
+      suhu: { value: '37.6°C', note: '37.5–38°C demam ringan. Bisa juga akibat kepanasan (heat-stroke ringan).', gatedBy: null },
+      ruam: { value: 'Tidak ada ruam sama sekali di kulit.', note: null, gatedBy: null },
+      mata: { value: 'Mata normal, tidak merah.', note: null, gatedBy: null },
+      tekanan: { value: '130/80 mmHg', note: 'Normal untuk lansia.', gatedBy: null },
+      rambut: { value: 'Setelah topi dibuka, kepalanya botak.', note: 'Kebotakan umum pada lansia, bukan selalu gejala.', gatedBy: 'topi' },
     },
-    tells: {
-      ask_symptom: { signal: SIGNAL.SUSPECT, note: 'Mengaku dada sesak sejak kemarin.' },
-      demand_arm: { signal: SIGNAL.SUSPECT, note: 'Kulit dingin, nadi lemah — tanda sakit.' },
-      press_soft: { signal: SIGNAL.SUSPECT, note: 'Mengakui terinfeksi dengan jujur.' },
-      observe: { signal: SIGNAL.SUSPECT, note: 'Batuk kering berulang.' },
-      demand_id: { signal: SIGNAL.NEUTRAL, note: 'Penghuni 503, terhormat.' },
-    },
-    onAccept: { trust: 16, infectionRisk: 0.6, log: 'Kau menerima Pak Hadi. Penghuni terharu — tapi risiko menyebar nyata.' },
-    onReject: { trust: -22, infectionRisk: 0.0, log: 'Kau menolak kakek sekarat. Gedung memandangmu berbeda.' },
-    truthAccept: 'Kau memilih belas kasih di atas keamanan. Harganya akan terlihat.',
-    truthReject: 'Kau melindungi yang sehat — tapi membiarkan seorang tua sendiri.',
-  },
-  {
-    id: 'v06', name: 'Orang Asing', floor: null, color: '#8a8a93',
-    health: 'sehat',
-    demeanor: { start: 'tenang', patience: 50, guardedness: 60 },
-    contradiction: true, looterTrap: true,
-    intro: 'Sosok berseragam asing tanpa tanda pengenal jelas. Tersenyum tenang.',
-    claim: 'Mengaku "petugas evakuasi" datang lebih awal, minta dibukakan semua pintu.',
-    lines: {
-      ask_purpose: { default: '"Saya petugas evakuasi. Datang lebih awal. Bukakan semua pintu, ya."' },
-      ask_symptom: { default: '"Saya petugas, tentu sehat." (Tidak menjawab langsung.)' },
-      demand_id: {
-        tenang: '"ID? Ada di kendaraan. Percaya saja, ini prosedur darurat."',
-        mengelak: '"Berkasnya... tertinggal. Pokoknya saya resmi." (Senyum memudar.)',
-        membuka: '(Menunjukkan kartu — TAPI logonya tidak cocok prosedur evakuasi resmi.)',
-      },
-      demand_arm: { default: '"Tidak perlu. Saya sehat." (Lengan memang bersih, sehat.)' },
-      press_hard: {
-        mengelak: '"...Baik. Saya cuma mau ambil barang berharga sebelum evakuasi."',
-        default: '"Tenang, saya di pihak Anda."',
-      },
-      observe: { default: 'Fisik sehat — tapi matanya menyapu koridor, mencari sesuatu.' },
-      cross_log: { default: 'Tim evakuasi resmi baru tiba BESOK. Ceritanya tidak masuk akal.' },
-    },
-    tells: {
-      ask_symptom: { signal: SIGNAL.CLEAN, note: 'Fisik memang sehat.' },
-      demand_arm: { signal: SIGNAL.CLEAN, note: 'Tidak ada tanda sakit.' },
-      demand_id: { signal: SIGNAL.SUSPECT, note: 'ID tidak cocok prosedur evakuasi.', whenState: 'membuka' },
-      press_hard: { signal: SIGNAL.SUSPECT, note: 'Mengaku mau "ambil barang berharga".', whenState: 'mengelak' },
-      observe: { signal: SIGNAL.SUSPECT, note: 'Mata menyapu koridor — mencari jarahan.' },
-      cross_log: { signal: SIGNAL.SUSPECT, note: 'KONTRADIKSI: evakuasi resmi baru besok.' },
-    },
-    onAccept: { trust: -6, infectionRisk: 0.0, looting: true, log: 'Kau buka pintu. "Petugas" itu menjarah persediaan dan kabur.' },
-    onReject: { trust: 8, infectionRisk: 0.0, log: 'Kau tolak si penyusup. Ia menghilang, persediaan aman.' },
-    truthAccept: 'Ia tidak sakit — tapi penipu. Sehat tak selalu berarti aman.',
-    truthReject: 'Insting deduksimu benar: ceritanya palsu, niatnya buruk.',
+
+    truthAccept: 'Kakek Hasan sehat. Demam ringannya akibat kepanasan, dan kebotakan wajar di usianya. Tanpa ruam, ia bukan kasus cacar. Keputusan tepat.',
+    truthReject: 'Kau menolak Kakek Hasan yang sehat. Demam dan botaknya menggoda untuk dicurigai, tapi tanpa ruam ia tidak terinfeksi.',
   },
 
-  // ============ TAMBAHAN HARI 1 ============
+  // ============ 4. ADIT — CACAR (jelas, parah) ============
   {
-    id: 'v07', name: 'Andi', floor: 7, color: '#7fae8a',
-    health: 'sehat',
-    demeanor: { start: 'tenang', patience: 75, guardedness: 20 },
-    intro: 'Pemuda berpakaian rapi, membawa map kerja. Tenang dan sopan.',
-    claim: 'Karyawan kantoran lantai 7. Baru pulang lembur, minta masuk ke unitnya.',
-    lines: {
-      ask_purpose: { default: '"Pulang kerja, Pak. Capek sekali hari ini." (Wajar, lelah biasa.)' },
-      ask_symptom: { default: '"Sehat, cuma ngantuk berat." (Santai, tidak gugup.)' },
-      demand_id: { default: '"Ini kartu pegawai & penghuni 702." (Lengkap, rapi.)' },
-      demand_arm: { default: '"Silakan." (Lengan bersih, suhu normal.)' },
-      observe: { default: 'Postur tegak, tidak batuk. Hanya wajah lelah kerja.' },
-      cross_log: { default: 'Absensi kantornya tercatat lembur sampai malam. Cerita cocok.' },
+    id: 'v04',
+    name: 'Adit',
+    age: 30,
+    job: 'Teknisi AC',
+    floor: 5,
+    color: '#6c98b0',
+    health: 'cacar',
+    verdict: 'reject',
+
+    intro: 'Pria mengenakan masker dan kacamata hitam. Berdiri agak goyah, napasnya berat.',
+    claim: 'Teknisi AC, tinggal di lantai 5 bersama istrinya. Baru pulang shift kerja.',
+
+    barriers: [
+      { id: 'masker', label: 'lepas masker', stage: 'nomask' },
+      { id: 'kacamata', label: 'lepas kacamata dan gulung lengan baju', stage: 'open' },
+    ],
+
+    appearance: 'Tampak lemah dan tidak sehat. Berdiri tidak stabil.',
+
+    exams: {
+      observasi: { value: 'Setelah masker dibuka, wajahnya pucat pasi.', note: null, gatedBy: 'masker' },
+      suhu: { value: '39.0°C', note: 'Demam tinggi.', gatedBy: null },
+      ruam: { value: 'Saat lengan digulung, terlihat ruam merah yang banyak dan menyebar.', note: 'Ruam menyebar luas.', gatedBy: 'kacamata' },
+      mata: { value: 'Setelah kacamata dilepas, matanya merah berair.', note: null, gatedBy: 'kacamata' },
+      tekanan: { value: '80/60 mmHg', note: 'Tekanan darah rendah.', gatedBy: null },
+      rambut: { value: 'Rambut masih ada, belum rontok.', note: null, gatedBy: null },
     },
-    tells: {
-      ask_symptom: { signal: SIGNAL.CLEAN, note: 'Santai, jujur soal ngantuk.' },
-      demand_id: { signal: SIGNAL.CLEAN, note: 'Identitas 702 lengkap & valid.' },
-      demand_arm: { signal: SIGNAL.CLEAN, note: 'Tidak ada tanda sakit.' },
-      observe: { signal: SIGNAL.CLEAN, note: 'Hanya lelah, bukan demam.' },
-      cross_log: { signal: SIGNAL.CLEAN, note: 'Lembur tercatat, konsisten.' },
-    },
-    onAccept: { trust: 8, infectionRisk: 0.0, log: 'Andi masuk dengan tenang. Ia membantu menjaga ketertiban.' },
-    onReject: { trust: -12, infectionRisk: 0.0, log: 'Kau menolak warga sah yang sehat. Ia kecewa berat.' },
-    truthAccept: 'Warga sehat yang sah — keputusan tepat.',
-    truthReject: 'Kau mengusir orang sehat tanpa alasan.',
-  },
-  {
-    id: 'v08', name: 'Pak Yusuf', floor: 7, color: '#b0905f',
-    health: 'terinfeksi',
-    demeanor: { start: 'tenang', patience: 40, guardedness: 60 },
-    contradiction: true,
-    intro: 'Pria setengah baya berpeluh banyak. Ia terus tersenyum kaku.',
-    claim: 'Pedagang lantai 7. Bilang "baru dari pasar", minta segera masuk.',
-    lines: {
-      ask_purpose: { default: '"Dari pasar, Pak. Dagangan harus disimpan." (Buru-buru.)' },
-      ask_symptom: { default: '"Sehat-sehat saja! Cuma kepanasan." (Mengelap keringat berlebih.)' },
-      demand_id: {
-        tenang: '"KTP? Ada di tas... aduh, ribet. Percaya saja lah."',
-        mengelak: '"Dompet saya ketinggalan di lapak. Pokoknya saya penghuni sini."',
-        membuka: '(Akhirnya menyerahkan kartu 706 — asli, tapi tangannya gemetar.)',
-      },
-      demand_arm: {
-        mengelak: '"Buat apa periksa lengan? Aneh-aneh saja." (Menutupi.)',
-        membuka: '(Menyingkap — kulit memerah, panas. Ia menunduk.)',
-      },
-      press_soft: { mengelak: '"...Yah, memang agak meriang sejak tadi pagi. Tapi kuat kok."', default: '"Saya sehat!"' },
-      observe: { default: 'Keringat deras di koridor sejuk. Sesekali menggigil kecil.' },
-      cross_log: { default: 'Pasar tutup sejak outbreak diumumkan. Ceritanya tidak masuk akal.' },
-    },
-    tells: {
-      ask_symptom: { signal: SIGNAL.SUSPECT, note: 'Keringat berlebih, alasan "kepanasan" janggal.' },
-      demand_id: { signal: SIGNAL.SUSPECT, note: 'Berkelit soal KTP — mengelak.', whenState: 'mengelak' },
-      demand_arm: { signal: SIGNAL.SUSPECT, note: 'Kulit memerah & panas.', whenState: 'membuka' },
-      press_soft: { signal: SIGNAL.SUSPECT, note: 'Mengaku meriang sejak pagi.', whenState: 'mengelak' },
-      observe: { signal: SIGNAL.SUSPECT, note: 'Menggigil di tempat sejuk — demam.' },
-      cross_log: { signal: SIGNAL.SUSPECT, note: 'KONTRADIKSI: pasar sudah tutup.' },
-    },
-    onAccept: { trust: 4, infectionRisk: 0.85, log: 'Pak Yusuf masuk. Demamnya memuncak malam itu.' },
-    onReject: { trust: -6, infectionRisk: 0.0, log: 'Pak Yusuf kau tolak. Ia merengek lama di depan pintu.' },
-    truthAccept: 'Ia menutupi demamnya — wabah masuk lagi.',
-    truthReject: 'Tepat — ceritanya bohong dan ia terinfeksi.',
-  },
-  {
-    id: 'v09', name: 'Mbak Tari', floor: 7, color: '#c98fa0',
-    health: 'sehat',
-    demeanor: { start: 'defensif', patience: 50, guardedness: 30 },
-    falseNervous: true,
-    intro: 'Perempuan muda menggendong tas bayi. Matanya waspada, gelisah.',
-    claim: 'Ibu muda lantai 7. Cemas demi bayinya, minta cepat masuk.',
-    lines: {
-      ask_purpose: { default: '"Tolong, anak saya butuh tempat aman. Cepat ya, Pak?"' },
-      ask_symptom: {
-        defensif: '"Saya? Nggak sakit! Kenapa nanya-nanya, sih?" (Defensif karena panik.)',
-        default: '"Saya sehat. Cuma khawatir anak saya."',
-      },
-      demand_id: { default: '"Ini kartu penghuni 708." (Menyerahkan sambil menggendong bayi.)' },
-      demand_arm: { default: '"Cepat ya periksanya." (Lengan normal, sehat.)' },
-      reassure: { default: '"...Maaf saya galak. Saya cuma takut buat anak saya."' },
-      observe: { default: 'Gelisah, tapi tidak batuk/demam. Cemas keibuan murni.' },
-      cross_log: { default: 'Terdaftar penghuni 708 bersama satu balita. Konsisten.' },
-    },
-    tells: {
-      ask_symptom: { signal: SIGNAL.SUSPECT, note: 'Defensif & ketus — TAPI mungkin karena panik.', whenState: 'defensif' },
-      reassure: { signal: SIGNAL.CLEAN, note: 'Setelah tenang, jelas hanya khawatir anak.' },
-      demand_arm: { signal: SIGNAL.CLEAN, note: 'Kulit & suhu normal.' },
-      observe: { signal: SIGNAL.CLEAN, note: 'Tidak ada gejala, hanya cemas.' },
-      cross_log: { signal: SIGNAL.CLEAN, note: 'Penghuni 708 dengan balita, cocok.' },
-    },
-    onAccept: { trust: 12, infectionRisk: 0.0, log: 'Mbak Tari & bayinya masuk dengan selamat. Gedung lega.' },
-    onReject: { trust: -20, infectionRisk: 0.0, log: 'Kau menolak ibu & bayi yang sehat. Penghuni geram.' },
-    truthAccept: 'Ibu sehat yang ketakutan — kau menyelamatkan dua nyawa.',
-    truthReject: 'Sikap defensifnya menipumu. Ia sehat, dan kau menolaknya.',
+
+    truthReject: 'Adit terinfeksi VRS-24 parah. Demam tinggi, ruam menyebar, mata merah, tekanan rendah — semua tanda lengkap. Keputusan tepat.',
+    truthAccept: 'Kau meloloskan Adit yang jelas terinfeksi parah. Wabah masuk dengan cepat.',
   },
 
-  // ============ TAMBAHAN HARI 2 ============
+  // ============ 5. RAHMA & TITA — SEHAT (jebakan: bayi habis imunisasi) ============
   {
-    id: 'v10', name: 'Bayu', floor: 6, color: '#7fb088',
+    id: 'v05',
+    name: 'Rahma & Tita',
+    age: 27,
+    job: 'Ibu rumah tangga',
+    floor: 5,
+    color: '#d18fb0',
     health: 'sehat',
-    demeanor: { start: 'tenang', patience: 80, guardedness: 15 },
-    intro: 'Remaja bertopi, menggendong ransel sekolah. Tenang, agak malu.',
-    claim: 'Pelajar lantai 6. Pulang dari rumah teman, minta masuk.',
-    lines: {
-      ask_purpose: { default: '"Mau pulang, Pak. Tadi nginep di rumah teman pas pengumuman."' },
-      ask_symptom: { default: '"Sehat kok. Cuma lapar." (Polos, tidak gugup.)' },
-      demand_id: { default: '"Ini kartu pelajar & penghuni 603." (Sopan menyerahkan.)' },
-      demand_arm: { default: '"Boleh." (Lengan bersih, normal.)' },
-      observe: { default: 'Tenang, tidak ada tanda sakit. Hanya remaja kelaparan.' },
-      cross_log: { default: 'Orang tuanya di 603 membenarkan ia menginap di luar.' },
+    verdict: 'accept',
+
+    intro: 'Seorang ibu menggendong anak perempuannya (Tita, 1,5 tahun). Si kecil tampak mengantuk di pelukan ibunya. Wajah keduanya tenang.',
+    claim: 'Istri Adit (lantai 5). Baru pulang dari imunisasi rutin Tita.',
+
+    barriers: [],   // tidak ada penghalang — semua terlihat
+
+    appearance: 'Keduanya tampak tenang. Tidak ada yang pucat atau berkeringat berlebih.',
+
+    exams: {
+      observasi: { value: 'Ibu dan bayi tampak sehat. Tidak ada tanda lemah atau pucat.', note: null, gatedBy: null },
+      suhu: { value: 'Rahma 36.5°C (normal). Tita 36.8°C (normal).', note: 'Keduanya suhu normal.', gatedBy: null },
+      ruam: { value: 'Rahma: kulit bersih. Tita: ada SATU bintik kecil di lengan atas (bekas suntik imunisasi).', note: 'Satu bintik di lokasi suntik berbeda dari ruam.', gatedBy: null },
+      mata: { value: 'Mata keduanya normal.', note: null, gatedBy: null },
+      tekanan: { value: 'Rahma 140/90 mmHg (agak tinggi). Tita 80/55 (normal bayi).', note: '140/90 cenderung hipertensi, bukan gejala infeksi.', gatedBy: null },
+      rambut: { value: 'Rahma normal. Tita berambut tipis halus (wajar untuk batita).', note: 'Rambut tipis pada anak kecil adalah hal normal.', gatedBy: null },
     },
-    tells: {
-      ask_symptom: { signal: SIGNAL.CLEAN, note: 'Polos, jujur.' },
-      demand_id: { signal: SIGNAL.CLEAN, note: 'Identitas 603 valid.' },
-      demand_arm: { signal: SIGNAL.CLEAN, note: 'Tidak ada tanda sakit.' },
-      observe: { signal: SIGNAL.CLEAN, note: 'Sehat, hanya lapar.' },
-      cross_log: { signal: SIGNAL.CLEAN, note: 'Dibenarkan orang tua, konsisten.' },
-    },
-    onAccept: { trust: 9, infectionRisk: 0.0, log: 'Bayu masuk. Ia kembali ke pelukan orang tuanya.' },
-    onReject: { trust: -15, infectionRisk: 0.0, log: 'Kau menolak anak sehat. Orang tuanya histeris.' },
-    truthAccept: 'Anak sehat pulang ke keluarganya — keputusan tepat.',
-    truthReject: 'Kau memisahkan anak sehat dari orang tuanya.',
-  },
-  {
-    id: 'v11', name: 'Sopir Truk', floor: null, color: '#8a8a93',
-    health: 'terinfeksi',
-    demeanor: { start: 'tenang', patience: 25, guardedness: 80 },
-    contradiction: true,
-    intro: 'Pria asing berbadan besar, bau solar. Tatapannya tajam menantang.',
-    claim: 'Mengaku "pengantar logistik darurat", minta masuk simpan barang.',
-    lines: {
-      ask_purpose: { default: '"Antar logistik, Bos. Buruan, truk saya parkir sembarangan."' },
-      ask_symptom: { default: '"Sehat! Saya kan kuli, kebal." (Membusungkan dada.)' },
-      demand_id: {
-        tenang: '"Surat jalan? Ketinggalan di truk. Masa nggak percaya orang susah?"',
-        mengelak: '"Hilang! Pokoknya saya petugas logistik. Jangan ribet!"',
-        membuka: '(Tak punya surat apa pun. Hanya KTP daerah lain — bukan penghuni.)',
-      },
-      demand_arm: {
-        mengelak: '"Heh, jangan sentuh! Mau apa?" (Menarik tangan kasar.)',
-        membuka: '(Terpaksa — ada bekas gigitan setengah tertutup perban di lengan.)',
-      },
-      press_hard: {
-        mengelak: '"AWAS YA! Buka pintunya atau saya dobrak!" (Menggebrak.)',
-        default: '"Jangan macam-macam."',
-      },
-      observe: { default: 'Perban di lengan merembes. Wajahnya pucat di balik garang.' },
-      cross_log: { default: 'Tidak ada jadwal logistik hari ini. Ia bukan penghuni manapun.' },
-    },
-    tells: {
-      ask_symptom: { signal: SIGNAL.NEUTRAL, note: 'Sok kuat — belum tentu sehat.' },
-      demand_id: { signal: SIGNAL.SUSPECT, note: 'Tak ada surat; KTP luar kota, bukan penghuni.', whenState: 'membuka' },
-      demand_arm: { signal: SIGNAL.SUSPECT, note: 'Bekas GIGITAN diperban di lengan.', whenState: 'membuka' },
-      observe: { signal: SIGNAL.SUSPECT, note: 'Perban merembes, wajah pucat.' },
-      cross_log: { signal: SIGNAL.SUSPECT, note: 'KONTRADIKSI: tak ada jadwal logistik, bukan penghuni.' },
-    },
-    onAccept: { trust: -4, infectionRisk: 0.95, log: 'Kau buka pintu. Pria itu — tergigit — menulari banyak orang.' },
-    onReject: { trust: 6, infectionRisk: 0.0, log: 'Kau tolak penyusup tergigit. Ia mengamuk lalu pergi.' },
-    truthAccept: 'Ia tergigit dan bukan penghuni — wabah masuk parah.',
-    truthReject: 'Tepat — orang asing tergigit yang berbahaya.',
-  },
-  {
-    id: 'v12', name: 'Bu Lastri', floor: 5, color: '#a87f9b',
-    health: 'terinfeksi',
-    demeanor: { start: 'tenang', patience: 70, guardedness: 25 },
-    moral: true,
-    intro: 'Wanita tua lembut, memeluk foto keluarga. Batuk kecil sesekali.',
-    claim: 'Nenek lantai 5. Jujur bilang "kurang enak badan", tetap minta masuk.',
-    lines: {
-      ask_purpose: { default: '"Aku ingin pulang ke unit, Nak. Ingin di rumah sendiri."' },
-      ask_symptom: { default: '"Tenggorokanku gatal, batuk-batuk sejak semalam. Aku tak mau bohong."' },
-      demand_id: { default: '"Ini, Nak." (Kartu penghuni 504, dikenal semua orang.)' },
-      demand_arm: { default: '(Lengan keriput — terasa hangat, ada bercak kemerahan.)' },
-      press_soft: { default: '"Aku tahu aku sakit. Tapi izinkan aku istirahat di rumahku sendiri."' },
-      reassure: { default: '"Kau anak baik. Apa pun keputusanmu, aku mengerti."' },
-      observe: { default: 'Batuk kering berulang, mata berair. Tanda awal infeksi.' },
-      cross_log: { default: 'Penghuni 504 yang jujur. Ceritanya konsisten dengan sakitnya.' },
-    },
-    tells: {
-      ask_symptom: { signal: SIGNAL.SUSPECT, note: 'Jujur mengaku batuk sejak semalam.' },
-      demand_arm: { signal: SIGNAL.SUSPECT, note: 'Lengan hangat, bercak kemerahan.' },
-      press_soft: { signal: SIGNAL.SUSPECT, note: 'Mengakui sakit dengan jujur.' },
-      observe: { signal: SIGNAL.SUSPECT, note: 'Batuk kering, mata berair.' },
-      demand_id: { signal: SIGNAL.NEUTRAL, note: 'Penghuni 504, dikenal.' },
-    },
-    onAccept: { trust: 14, infectionRisk: 0.6, log: 'Kau terima Bu Lastri. Penghuni terharu — tapi risiko nyata.' },
-    onReject: { trust: -20, infectionRisk: 0.0, log: 'Kau tolak nenek yang jujur. Gedung berduka & marah.' },
-    truthAccept: 'Belas kasih di atas keamanan — harganya akan terlihat.',
-    truthReject: 'Kau melindungi yang sehat, tapi mengusir nenek yang jujur.',
+
+    truthAccept: 'Rahma dan Tita sehat. Bintik di lengan Tita adalah bekas imunisasi (satu titik), bukan ruam cacar yang menyebar. Tekanan tinggi Rahma adalah hipertensi. Keputusan tepat.',
+    truthReject: 'Kau menolak ibu dan bayi yang sehat. Satu bekas suntik bukan ruam cacar — kau salah membaca pola.',
   },
 
-  // ============ TAMBAHAN HARI 3 ============
+  // ============ 6. IBU MIMA — CACAR (menyamar: tiap gejala ada "alasan kerja") ============
   {
-    id: 'v13', name: 'Dokter Reza', floor: null, color: '#6fa6ae',
-    health: 'sehat',
-    demeanor: { start: 'tenang', patience: 85, guardedness: 20 },
-    intro: 'Pria berjas putih lusuh, membawa kotak P3K. Lelah tapi mantap.',
-    claim: 'Mengaku dokter relawan, ingin membantu merawat yang sakit di dalam.',
-    lines: {
-      ask_purpose: { default: '"Saya dokter relawan. Dengar ada yang sakit di sini — saya bisa bantu."' },
-      ask_symptom: { default: '"Saya sehat, rutin tes. Tugas saya menjaga itu." (Tenang, meyakinkan.)' },
-      demand_id: { default: '"Ini ID rumah sakit & sertifikat saya." (Lengkap, terverifikasi.)' },
-      demand_arm: { default: '"Tentu, prosedur standar." (Lengan bersih, sehat.)' },
-      press_hard: { default: '"Saya paham kehati-hatian Anda. Periksa apa pun yang perlu."' },
-      observe: { default: 'Tangan terampil, tenang. Tidak ada tanda sakit sama sekali.' },
-      cross_log: { default: 'ID rumah sakitnya valid; relawan medis memang dikerahkan ke area ini.' },
+    id: 'v06',
+    name: 'Ibu Mima',
+    age: 45,
+    job: 'Penjual pasar ikan',
+    floor: 4,
+    color: '#b0905f',
+    health: 'cacar',
+    verdict: 'reject',
+
+    intro: 'Perempuan paruh baya yang ramah dan banyak tersenyum. Tampak segar, tidak seperti orang sakit. Lengan bajunya digulung sebagian.',
+    claim: 'Penjual di pasar ikan, tinggal sendiri di lantai 4. Baru pulang dari pasar ikan.',
+
+    barriers: [],   // dia tidak menutupi — justru disitu jebakannya: terlihat terbuka & ramah
+
+    appearance: 'Wajah segar dan ramah. Tidak pucat. Tetapi tangannya tampak kemerahan.',
+
+    exams: {
+      observasi: { value: 'Tidak pucat, malah tampak sehat. Tangan memerah. Saat ditanya, ia tersenyum: "Biasa, Nak, seharian kena air es ikan."', note: 'Kemerahan diberi alasan pekerjaan — perlu diperiksa lebih lanjut.', gatedBy: null },
+      suhu: { value: '38.1°C', note: 'Demam. Ia berdalih: "Pasar ikan itu pengap dan panas, Nak."', gatedBy: null },
+      ruam: { value: 'Di lengan terdapat bintik-bintik kemerahan yang menyebar. Ia berkata: "Itu alergi udang, langganan saya."', note: 'Ruam menyebar di banyak titik — terlepas dari alasannya.', gatedBy: null },
+      mata: { value: 'Mata agak merah. "Kurang tidur, Nak, bangun jam 3 ke pasar."', note: null, gatedBy: null },
+      tekanan: { value: '110/70 mmHg', note: 'Tekanan normal.', gatedBy: null },
+      rambut: { value: 'Rambut masih lebat.', note: null, gatedBy: null },
     },
-    tells: {
-      ask_symptom: { signal: SIGNAL.CLEAN, note: 'Rutin tes, meyakinkan.' },
-      demand_id: { signal: SIGNAL.CLEAN, note: 'ID RS & sertifikat valid.' },
-      demand_arm: { signal: SIGNAL.CLEAN, note: 'Tidak ada tanda sakit.' },
-      observe: { signal: SIGNAL.CLEAN, note: 'Sehat, profesional.' },
-      cross_log: { signal: SIGNAL.CLEAN, note: 'ID valid, relawan memang dikerahkan.' },
-    },
-    onAccept: { trust: 18, infectionRisk: 0.0, log: 'Dokter Reza masuk & langsung merawat yang sakit. Harapan tumbuh.' },
-    onReject: { trust: -10, infectionRisk: 0.0, log: 'Kau menolak dokter yang bisa menyelamatkan banyak orang.' },
-    truthAccept: 'Kau menerima penyelamat — banyak yang akan tertolong.',
-    truthReject: 'Paranoia membuatmu menolak satu-satunya dokter.',
+
+    truthReject: 'Ibu Mima terinfeksi VRS-24. Tiap gejala diberi alasan pekerjaan yang masuk akal — tapi demam + ruam menyebar + mata merah adalah pola cacar, bukan kebetulan kerja. Keputusan tepat.',
+    truthAccept: 'Kau meloloskan Ibu Mima. Alasan-alasannya meyakinkan, tapi pola gejalanya cacar. Konteks menipumu — wabah masuk.',
   },
-  {
-    id: 'v14', name: 'Lelaki Tenang', floor: null, color: '#9b8466',
-    health: 'terinfeksi',
-    demeanor: { start: 'tenang', patience: 90, guardedness: 70 },
-    contradiction: true,
-    intro: 'Pria rapi, sangat tenang, bicara halus. Terlalu sempurna.',
-    claim: 'Mengaku kerabat penghuni 505, "dititipi kunci", minta masuk.',
-    lines: {
-      ask_purpose: { default: '"Saya kerabat Pak Anwar 505. Dititipi menjaga unitnya." (Halus, meyakinkan.)' },
-      ask_symptom: { default: '"Saya sehat sempurna. Tak perlu khawatir." (Senyum tenang, tak gugup.)' },
-      demand_id: {
-        tenang: '"Identitas? Tentu. Ini KTP saya." (KTP asli — tapi alamat luar kota.)',
-        mengelak: '"Surat titipannya... lupa saya bawa. Tapi Pak Anwar kenal saya."',
-      },
-      demand_arm: {
-        tenang: '"Lengan? Hmm, lebih baik tidak. Privasi." (Halus menolak.)',
-        mengelak: '"Tak perlu lah. Saya sehat." (Tetap menolak, tenang.)',
-        membuka: '(Sangat terpaksa — ada ruam gelap menjalar di pergelangan.)',
-      },
-      press_soft: { default: '"Saya jujur kok. Tak ada yang perlu disembunyikan." (Tetap kalem.)' },
-      press_hard: { mengelak: '"...Baiklah. Saya akui, saya tak kenal Pak Anwar. Tapi saya butuh tempat."', default: '"Tenang, tak perlu kasar."' },
-      observe: { default: 'Terlalu tenang. Lengan kanan selalu disembunyikan di saku.' },
-      cross_log: { default: 'Pak Anwar 505 sudah mengungsi kemarin. Tak ada yang dititipi.' },
-    },
-    tells: {
-      ask_symptom: { signal: SIGNAL.NEUTRAL, note: 'Terlalu tenang — sulit dibaca.' },
-      demand_id: { signal: SIGNAL.NEUTRAL, note: 'KTP asli tapi alamat luar kota.' },
-      demand_arm: { signal: SIGNAL.SUSPECT, note: 'Ruam gelap menjalar di pergelangan.', whenState: 'membuka' },
-      press_hard: { signal: SIGNAL.SUSPECT, note: 'Mengaku berbohong soal kerabat.', whenState: 'mengelak' },
-      observe: { signal: SIGNAL.SUSPECT, note: 'Lengan kanan selalu disembunyikan.' },
-      cross_log: { signal: SIGNAL.SUSPECT, note: 'KONTRADIKSI: Pak Anwar sudah mengungsi.' },
-    },
-    onAccept: { trust: 2, infectionRisk: 0.9, log: 'Si "kerabat" masuk. Ruamnya menyebar cepat ke penghuni.' },
-    onReject: { trust: 4, infectionRisk: 0.0, log: 'Kau tolak penipu bertangan ruam. Ia pergi tanpa membantah.' },
-    truthAccept: 'Ketenangannya menipumu — ia terinfeksi dan berbohong.',
-    truthReject: 'Kau menembus ketenangannya. Tepat.',
-  },
-  {
-    id: 'v15', name: 'Pak Bagas', floor: 4, color: '#b09060',
-    health: 'sehat',
-    demeanor: { start: 'defensif', patience: 35, guardedness: 45 },
-    falseNervous: true,
-    intro: 'Pria paruh baya gugup, baju lusuh. Suaranya bergetar.',
-    claim: 'Tukang kebun lantai 4. Takut tertinggal, memohon masuk.',
-    lines: {
-      ask_purpose: { default: '"Tolong, Pak... saya cuma mau ke unit. Jangan tinggalkan saya." (Memelas.)' },
-      ask_symptom: {
-        defensif: '"S-saya nggak sakit! Sumpah! Jangan tolak saya..." (Gemetar ketakutan.)',
-        default: '"Saya sehat, Pak. Cuma takut."',
-      },
-      demand_id: {
-        defensif: '"I-ini... kartu saya." (Gemetar — kartu penghuni 405, asli.)',
-        default: '"Ini kartunya." (Lebih tenang.)',
-      },
-      demand_arm: { default: '"S-silakan." (Lengan kasar kerja kebun, tapi sehat & normal.)' },
-      reassure: { default: '"...Terima kasih sudah sabar. Saya cuma takut sekali, Pak."' },
-      observe: { default: 'Gemetar hebat, tapi tidak demam/batuk. Ketakutan murni.' },
-      cross_log: { default: 'Tukang kebun terdaftar di 405. Tidak ada kontradiksi.' },
-    },
-    tells: {
-      ask_symptom: { signal: SIGNAL.SUSPECT, note: 'Sangat gugup — TAPI mungkin cuma ketakutan.', whenState: 'defensif' },
-      reassure: { signal: SIGNAL.CLEAN, note: 'Setelah tenang, jelas tidak sakit.' },
-      demand_arm: { signal: SIGNAL.CLEAN, note: 'Kulit sehat, suhu normal.' },
-      observe: { signal: SIGNAL.CLEAN, note: 'Gemetar karena takut, bukan demam.' },
-      cross_log: { signal: SIGNAL.CLEAN, note: 'Penghuni 405, konsisten.' },
-    },
-    onAccept: { trust: 10, infectionRisk: 0.0, log: 'Pak Bagas masuk, menangis lega. Ia membantu kebersihan gedung.' },
-    onReject: { trust: -16, infectionRisk: 0.0, log: 'Kau menolak pekerja sehat yang ketakutan. Hatimu berat.' },
-    truthAccept: 'Ia hanya takut — kau menyelamatkan orang sehat.',
-    truthReject: 'Ketakutannya kau salah-artikan. Ia sehat, dan kau menolaknya.',
-  },
+];
+
+// Daftar pemeriksaan yang tersedia (untuk membangun PemeriksaanFSM & menu UI).
+export const EXAM_TYPES = [
+  { id: 'observasi', label: 'Observasi pengunjung' },
+  { id: 'suhu', label: 'Cek suhu tubuh' },
+  { id: 'ruam', label: 'Periksa ruam (lengan/leher)' },
+  { id: 'mata', label: 'Periksa mata' },
+  { id: 'tekanan', label: 'Cek tekanan darah' },
+  { id: 'rambut', label: 'Periksa rambut/kepala' },
 ];
 
 export function getVisitors() {
   return VISITORS.map((v) => ({ ...v }));
 }
 
-export const DAY_SCHEDULE = {
-  1: ['v01', 'v02', 'v07', 'v08', 'v09'],
-  2: ['v03', 'v04', 'v10', 'v11', 'v12'],
-  3: ['v05', 'v06', 'v13', 'v14', 'v15'],
-};
+// Urutan kedatangan (1 hari, 6 pengunjung).
+export const DAY_SCHEDULE = ['v01', 'v02', 'v03', 'v04', 'v05', 'v06'];

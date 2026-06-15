@@ -1,7 +1,4 @@
-// LoreScene.js — Halaman "Lore & Referensi": menjelaskan bahwa bioweapon dalam
-// game ini terinspirasi dari smallpox (variola) yang diberantas 1980, lengkap
-// dengan sejarah, gejala, sejarah penggunaannya sebagai senjata biologis,
-// sumber kredibel, dan DISCLAIMER bahwa game ini fiksi.
+// Untuk menu lore dan reference
 export default class LoreScene extends Phaser.Scene {
   constructor() { super('LoreScene'); }
 
@@ -15,12 +12,48 @@ export default class LoreScene extends Phaser.Scene {
     root.style.pointerEvents = 'auto';
     root.innerHTML = `
       <div class="lore-screen">
-        <div class="lore-head">LORE &amp; REFERENSI</div>
+        <div class="lore-head">LORE GAME</div>
         <div class="lore-scroll">
+          <div class="lore-sec">
+            <h3>Apa itu VRS-24?</h3>
+            <p><b>VRS-24 (Varion Rapid Syndrome-24)</b> adalah penyakit menular fiktif yang
+            diduga berasal dari sebuah program penelitian biologis rahasia. Virus ini
+            pertama kali terdeteksi di Kota Nusaraya pada <b>5 Desember 2024</b> dan
+            menyebar dengan sangat cepat hingga menginfeksi hampir <b>tiga perempat
+            penduduk kota</b>. Hingga kini tidak diketahui secara pasti apakah wabah
+            tersebut disebabkan oleh kecelakaan laboratorium atau pelepasan yang
+            disengaja...</p>
+          </div>
+
+          <div class="lore-sec">
+            <h3>Bagaimana Gejala VRS-24?</h3>
+            <p>Gejala VRS-24 meliputi <b>demam tinggi, kelelahan, pucat, mata memerah, 
+            dan ruam yang menyebar di seluruh tubuh</b>. Infeksi ini bersifat fatal dan akan 
+            menyebabkan kematian dalam waktu sekitar <b>32 jam</b> setelah gejala pertama muncul. 
+            Hingga saat ini, satu-satunya penanganan yang diketahui efektif adalah pemberian vaksin 
+            sebelum batas waktu tersebut, meskipun virus tetap menetap di dalam tubuh penyintas 
+            dalam kondisi tidak aktif.
+            </p>
+          </div>
+
+          <div class="lore-sec">
+            <h3>Cara Kerja VRS-24 Sebagai Senjata Biologis</h3>
+            <p>VRS-24 dirancang sebagai agen biologis yang mampu menyebar melalui <b>udara dan air yang terkontaminasi</b>. 
+            Berbeda dengan senjata konvensional, kerusakannya tidak terjadi dalam satu ledakan, melainkan menyebar diam-diam 
+            dari satu korban ke korban lain. Dalam hitungan hari, sebuah kota besar dapat berubah menjadi zona karantina 
+            penuh kepanikan. Tanpa vaksin dan tindakan darurat, VRS-24 diperkirakan mampu menginfeksi sebagian besar populasi 
+            serta menyebabkan runtuhnya layanan kesehatan, ketertiban masyarakat, dan ribuan kematian dalam waktu yang sangat singkat.
+            </p>
+          </div>
+
+        </div>
+          
+        <div class="lore-head">REFERENSI GAME</div>
+        <div class="lore-scroll">
+
           <div class="lore-disc lore-disc-top">
-            <b>Catatan Game:</b> <i>"VRS-24"</i> atau <i>Varion Rapid Syndrome 24</i> adalah nama virus yang menginfeksi
-            para warga kota Nusaraya dalam game <b>Please, Let Me In!</b>. Virus dalam game ini terinspirasi dari penyakit nyata yang sudah diberantas yaitu:
-            <b>cacar (smallpox / virus variola)</b>. Mekanik dari game ini adalah melihat ciri-ciri warga yang ingin masuk ke dalam gedung, selalu interogasi 
+            Virus dalam game ini terinspirasi dari penyakit nyata yang sudah diberantas yaitu:
+            <b>cacar (smallpox / virus variola)</b>. Mekanik dari game ini adalah melihat ciri-ciri warga yang ingin masuk ke dalam gedung, selalu observasi 
             warga jika ingin masuk. Apabila ada indikasi warga terkena virus maka tolak masuk warga, namun apabila tidak ada indikasi maka izinkan masuk warga.
           </div>
 
@@ -40,8 +73,6 @@ export default class LoreScene extends Phaser.Scene {
             bintik berisi cairan bening yang lalu menjadi nanah, mengeras, lalu mengelupas.
             Ruam dimulai dari <b>wajah dan tangan</b>, lalu menyebar ke seluruh tubuh,
             sering meninggalkan bekas luka permanen.</p>
-            <p class="lore-note">Dalam game, gejala inilah yang kau cari saat "Periksa lengan"
-            atau "Amati" — demam, kulit memerah/ruam, dan napas memberat.</p>
           </div>
 
           <div class="lore-sec">
@@ -69,8 +100,8 @@ export default class LoreScene extends Phaser.Scene {
           </div>
 
           <div class="lore-sec">
-            <h3>Referensi Keseluruhan Game</h3>
-            <p>Referensi mekanik game <b>Please, Let Me In!</b> adalah dari game <b>Quarantine Zone</b>,
+            <h3>Referensi Mekanik Game</h3>
+            <p>Referensi mekanik game <b>Please, Let Me In!</b> adalah dari game <b>Quarantine Zone</b>, <b>"Paper, Please"</b>,
             dan game-game anomali di roblox seperti <b>Scary Shawarma Kiosk: The Anomaly</b> dan juga <b>Bakso Malang Anomalies</b>.
             <i>Honorable Mention</i> saya berikan kepada game <b>Resident Evil</b> karena inspirasi lorenya terkait senjata biologis.</p>
           </div>
@@ -94,8 +125,10 @@ export default class LoreScene extends Phaser.Scene {
             peristiwa nyata mana pun. Tidak ada informasi di sini yang ditujukan untuk
             penyalahgunaan; bagian sejarah disajikan sebagai pengetahuan kesehatan publik.
           </div>
+          <div style="display: flex; justify-content: center; width: 100%; margin-top: 20px; padding-bottom: 20px;">
+            <button id="lore-back" class="lore-btn">&#9666; KEMBALI</button>
+          </div>
         </div>
-        <button id="lore-back" class="lore-btn">&#9666; KEMBALI</button>
       </div>`;
     document.getElementById('lore-back').onclick = () => {
       root.innerHTML = ''; root.style.pointerEvents = 'none';

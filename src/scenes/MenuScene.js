@@ -1,4 +1,4 @@
-// MenuScene.js — Menu utama: Mulai · Lanjutkan (jika ada save) · Kredit
+// MenuScene.js — Menu utama: Mulai · Lanjutkan (jika ada save) · Cara Bermain · Kredit
 import { SaveManager } from '../engine/save.js';
 import { UI } from '../ui.js';
 
@@ -8,6 +8,13 @@ export default class MenuScene extends Phaser.Scene {
   create() {
     const W = this.scale.width, H = this.scale.height;
     UI.unmount();
+
+    // Ukuran adaptif: kecilkan judul di layar sempit/pendek agar tak nabrak tombol
+    const isCompact = W < 760 || H < 680;
+    const titleSize = isCompact ? '52px' : '80px';
+    const subSize = isCompact ? '18px' : '24px';
+    const titleY = H * 0.22;
+    const subY = H * 0.38;
 
     const bgNormal = this.add
       .image(W / 2, H / 2, 'bg-plain')
@@ -87,30 +94,30 @@ export default class MenuScene extends Phaser.Scene {
       tint: 0xe8c468,
     });
 
-    const title = this.add.text(W / 2, H * 0.26, 'PLEASE, LET ME IN!', {
+    const title = this.add.text(W / 2, titleY, 'PLEASE, LET ME IN!', {
       fontFamily: '"Creepster", cursive',
-      fontSize: '80px',
+      fontSize: titleSize,
       color: '#B11226',
       fontStyle: 'bold',
     }).setOrigin(0.5);
 
     // RGB layers
     const titleRed = this.add.text(
-      W / 2, H * 0.26,
+      W / 2, titleY,
       'PLEASE, LET ME IN!',
       {
         fontFamily: '"Creepster", cursive',
-        fontSize: '80px',
+        fontSize: titleSize,
         color: '#ff2d2d'
       }
     ).setOrigin(0.5).setAlpha(0);
 
     const titleBlue = this.add.text(
-      W / 2, H * 0.26,
+      W / 2, titleY,
       'PLEASE, LET ME IN!',
       {
         fontFamily: '"Creepster", cursive',
-        fontSize: '80px',
+        fontSize: titleSize,
         color: '#00d9ff'
       }
     ).setOrigin(0.5).setAlpha(0);
@@ -119,15 +126,15 @@ export default class MenuScene extends Phaser.Scene {
     titleRed.setDepth(9);
     titleBlue.setDepth(9);
 
-    this.add.text(W / 2, H * 0.40,
+    this.add.text(W / 2, subY,
       'Satu keputusanmu yang salah,\n' +
       'Satu gedung yang akan menanggung akibatnya!',
       {
         fontFamily: 'Special Elite, cursive',
-        fontSize: '20px',
+        fontSize: subSize,
         color: '#B8B3C2',
         align: 'center',
-        lineSpacing: 6
+        lineSpacing: 8
       }
     ).setOrigin(0.5);
 
@@ -167,28 +174,39 @@ export default class MenuScene extends Phaser.Scene {
     const btns = [];
     btns.push({ label: 'START GAME', action: () => this.startNew() });
     if (hasSave) {
-      btns.push({ label: `CONTINUE  (Day ${sum.day})`, action: () => this.continueGame(), accent: true });
+      btns.push({ label: `CONTINUE`, action: () => this.continueGame(), accent: true });
     }
+    btns.push({ label: 'CARA BERMAIN', action: () => this.scene.start('TutorialScene'), ghost: true });
     btns.push({ label: 'LORE & REFERENCE', action: () => this.scene.start('LoreScene'), ghost: true });
     btns.push({ label: 'CREDIT', action: () => this.scene.start('CreditScene'), ghost: true });
 
-    let y = H * 0.56;
-    const gap = btns.length >= 5 ? 56 : 62;
+    // Susun tombol mulai DI BAWAH subtitle, bukan dari titik tengah layar.
+    // Dengan begitu tombol tidak pernah naik menabrak teks di atasnya.
+    const btnW = 380, btnH = 52;
+    const safeTop = subY + 56;        // mulai sedikit di bawah subtitle
+    const bottomPad = 70;             // sisakan ruang untuk teks footer di bawah
+    // Hitung gap agar seluruh tombol muat antara safeTop dan bawah layar.
+    const avail = (H - bottomPad) - safeTop;
+    const gap = Math.min(62, avail / btns.length);  // padat otomatis jika sempit
+    let y = safeTop + gap / 2;        // pusat tombol pertama
     for (const b of btns) {
       const bg = b.ghost ? 0x16141c : (b.accent ? 0x6e0b14 : 0xe8c468);
       const fg = b.ghost ? '#e8c468' : (b.accent ? '#ffffff' : '#16141c');
-      const rect = this.add.rectangle(W / 2, y, 280, 46, bg).setInteractive({ useHandCursor: true });
-      if (b.ghost) rect.setStrokeStyle(1, 0x35313f);
+
+      const rect = this.add.rectangle(W / 2, y, btnW, btnH, bg).setInteractive({ useHandCursor: true });
+      if (b.ghost) rect.setStrokeStyle(2, 0xe8c468, 0.5);
+
       const txt = this.add.text(W / 2, y, b.label, {
-        fontFamily: 'syne, sans-serif', fontSize: '15px', color: fg, fontStyle: 'bold',
+        fontFamily: 'syne, sans-serif', fontSize: '19px', color: fg, fontStyle: 'bold',
       }).setOrigin(0.5);
-      rect.on('pointerover', () => { rect.setScale(1.04); txt.setScale(1.04); });
-      rect.on('pointerout', () => { rect.setScale(1); txt.setScale(1); });
+
+      rect.on('pointerover', () => { rect.setScale(1.05); txt.setScale(1.05); rect.setAlpha(0.9); });
+      rect.on('pointerout', () => { rect.setScale(1); txt.setScale(1); rect.setAlpha(1); });
       rect.on('pointerdown', b.action);
       y += gap;
     }
 
-    this.add.text(W / 2, H - 24, 'Tugas Final Projek Game Edukasi & Simulasi · Teknik Informatika ITS 2026',
+    this.add.text(W / 2, H - 24, 'Tugas Final Projek Game Edukasi & Simulasi · Teknik Informatika ITS 2026 · © 2026 Please Let Me In! All rights reserved',
       { fontFamily: 'Inter, sans-serif', fontSize: '11px', color: '#5e5868' }).setOrigin(0.5);
   }
 

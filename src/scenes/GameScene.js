@@ -1,6 +1,6 @@
-// GameScene.js — alur wawancara VN dengan save/continue + 2 ending.
+// GameScene.js — alur PEMERIKSAAN GEJALA (1 hari, 6 pengunjung) + 2 ending.
 import { Story } from '../engine/story.js';
-import { VERDICT } from '../engine/interview.js';
+import { VERDICT } from '../engine/inspection.js';
 import { SaveManager } from '../engine/save.js';
 import { UI } from '../ui.js';
 
@@ -12,18 +12,16 @@ export default class GameScene extends Phaser.Scene {
     const W = this.scale.width, H = this.scale.height;
     this.cameras.main.fadeIn(400);
 
-    // muat game: lanjutkan dari save, atau baru
     if (this.initData.continue) {
       const data = SaveManager.load();
       this.story = data ? Story.deserialize(data) : new Story(Date.now(), 'Penjaga');
     } else {
       this.story = new Story(Date.now(), this.initData.playerName || 'Penjaga');
-      this.story.pushLog('Hari pertama. Lift mati, koridor dikunci. Hanya kau yang menjaga pintu.', 'info');
     }
 
-    const hasDoor = this.registry.get('hasDoorPhoto');
-    this.bg = this.add.image(W / 2, H / 2, hasDoor ? 'photo-door' : 'bg-door')
-      .setDisplaySize(W, H).setAlpha(hasDoor ? 0.6 : 0.85);
+    // background pintu (statis — tak ada lagi BuildingFSM)
+    const bgTexture = this.textures.exists('photo-door') ? 'photo-door' : 'bg-plain';
+    this.bg = this.add.image(W / 2, H / 2, bgTexture).setDisplaySize(W, H).setAlpha(0.85);
     this.add.rectangle(W / 2, H / 2, W, H, 0x05060a, 0.32);
     this.add.particles(0, 0, 'dot', {
       x: { min: 0, max: W }, y: { min: 0, max: H }, lifespan: 7000,
@@ -33,58 +31,49 @@ export default class GameScene extends Phaser.Scene {
 
     UI.mount(this);
     this.autosave();
-    this.beginInterview();
+    this.beginInspection();
   }
 
   autosave() {
     if (!this.story.finished) SaveManager.save(this.story.serialize());
   }
 
-  beginInterview() {
-    const iv = this.story.nextInterview();
-    if (!iv) { this.endDay(); return; }
-    this.interview = iv;
-    UI.showVisitor(this, iv.visitor);
+  beginInspection() {
+    const insp = this.story.nextInspection();
+    if (!insp) { this.finish(); return; }
+    this.inspection = insp;
+    UI.showVisitor(this, insp.visitor);
     UI.render(this);
   }
 
-  doAction(action) {
-    if (!this.interview || this.interview.resolved) return;
-    if (this.interview.isLocked()) { UI.toast('Ia menolak bicara. Putuskan sekarang.'); return; }
-    const result = this.interview.act(action);
+  // Pemain klik menu pemeriksaan (suhu/ruam/mata/dll)
+  doExamine(examId) {
+    if (!this.inspection || this.inspection.resolved) return;
+    const result = this.inspection.examine(examId);
     if (!result) return;
-    UI.showLine(this, action, result);
-    if (result.transition.reaction === 'rebelled') this.cameras.main.shake(180, 0.004);
+    UI.showExam(this, examId, result);
+  }
+
+  // Pemain klik "minta buka penghalang"
+  doOpenBarrier(barrierId) {
+    if (!this.inspection || this.inspection.resolved) return;
+    const r = this.inspection.openBarrier(barrierId);
+    if (r && r.changed) UI.showBarrierOpened(this, r.label);
   }
 
   decide(verdict) {
-    if (!this.interview || this.interview.resolved) return;
+    if (!this.inspection || this.inspection.resolved) return;
     this.story.resolveCurrent(verdict);
     this.autosave();
-    // Tidak ada kartu hasil benar/salah — langsung lanjut, jaga misteri.
-    // Transisi singkat "pintu" agar terasa ada konsekuensi tanpa membocorkan.
     UI.showVerdictFlash(this, verdict, () => {
-      if (this.story.hasMoreToday()) this.beginInterview();
-      else this.endDay();
+      if (this.story.hasMore()) this.beginInspection();
+      else this.finish();
     });
-  }
-
-  endDay() {
-    // Jika sepanjang hari ini ada yang terinfeksi diloloskan → wabah pecah semalam.
-    if (this.story.isLost()) {
-      this.autosave();
-      UI.showOutbreakCard(this, this.story.day, () => this.finish());
-      return;
-    }
-    const more = this.story.advanceDay();
-    this.autosave();
-    if (!more) { this.finish(); return; }
-    UI.showDayCard(this, this.story.day, this.story.building.description(), () => this.beginInterview());
   }
 
   finish() {
     this.story.finished = true;
-    SaveManager.clear(); // selesai → hapus save
+    SaveManager.clear();
     const ending = this.story.computeEnding();
     UI.unmount();
     this.cameras.main.fadeOut(500, 5, 6, 10);

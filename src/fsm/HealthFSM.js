@@ -1,86 +1,54 @@
 // HealthFSM.js
-// FSM Kesehatan tersembunyi setiap orang:
-//   sehat → terpapar → bergejala → kritis → pulih / meninggal
-// State ini TERSEMBUNYI dari pemain. Pemeriksaan hanya mengungkap PETUNJUK
-// yang berkorelasi dengan state (ambigu). Untuk orang yang sudah diterima
-// masuk gedung, FSM ini terus maju tiap hari (konsekuensi keputusan).
+// FSM Kesehatan TERSEMBUNYI tiap pengunjung — "kebenaran" yang harus ditebak pemain.
+//
+//   sehat ──(terinfeksi)──► cacar
+//   sehat ──(punya kondisi lain)──► kondisi_lain   (anemia, heat-stroke, dll)
+//
+// State ini TIDAK terlihat pemain. Ia MENENTUKAN gejala apa yang muncul saat
+// diperiksa. Pemain mengamati gejala lalu menyimpulkan state ini sendiri.
+//
+// Versi 1-hari: FSM tidak "maju tiap hari". State ditetapkan saat visitor dibuat
+// (dari data), dan tetap sepanjang pemeriksaan. Kesederhanaan ini disengaja —
+// satu shift jaga, satu keputusan per orang.
 
 export const HEALTH = {
-  SEHAT: 'sehat',
-  TERPAPAR: 'terpapar',
-  BERGEJALA: 'bergejala',
-  KRITIS: 'kritis',
-  PULIH: 'pulih',
-  MENINGGAL: 'meninggal',
+  SEHAT: 'sehat',         // benar-benar sehat, tak ada gejala berarti
+  CACAR: 'cacar',         // terinfeksi VRS-24 — HARUS ditolak
+  KONDISI_LAIN: 'kondisi_lain', // punya gejala mirip tapi BUKAN cacar (anemia, heat-stroke, dsb)
 };
 
 export const HEALTH_LABELS = {
-  sehat: 'Sehat', terpapar: 'Terpapar', bergejala: 'Bergejala',
-  kritis: 'Kritis', pulih: 'Pulih', meninggal: 'Meninggal',
+  sehat: 'Sehat',
+  cacar: 'Terinfeksi VRS-24',
+  kondisi_lain: 'Kondisi Lain (non-infeksius)',
 };
 
 export class HealthFSM {
+  /**
+   * @param {string} start  state awal dari data visitor (HEALTH.*)
+   */
   constructor(start = HEALTH.SEHAT) {
     this.state = start;
-    this.load = start === HEALTH.SEHAT ? 0 : 30; // viral load tersembunyi
-    this.treated = false;
-    this.isolated = false;
-    this.daysCritical = 0;
     this.history = [start];
   }
 
+  // Apakah orang ini berbahaya bagi gedung? Hanya cacar yang menular.
   isInfectious() {
-    return this.state === HEALTH.TERPAPAR || this.state === HEALTH.BERGEJALA || this.state === HEALTH.KRITIS;
-  }
-  isAlive() { return this.state !== HEALTH.MENINGGAL; }
-  isTerminal() { return this.state === HEALTH.MENINGGAL || this.state === HEALTH.PULIH; }
-
-  expose(load = 30) {
-    if (this.state === HEALTH.SEHAT) {
-      this.state = HEALTH.TERPAPAR; this.load = load; this.history.push(this.state);
-    }
+    return this.state === HEALTH.CACAR;
   }
 
-  treat() { this.treated = true; }
-  setIsolated(v) { this.isolated = v; }
-
-  /** Maju satu hari (untuk orang di dalam gedung). */
-  advance(rng) {
-    if (this.isTerminal()) return this.state;
-    const prev = this.state;
-
-    if (this.treated) this.load -= 28;
-    else if (this.state !== HEALTH.SEHAT) this.load += this.isolated ? 10 : 18;
-    this.load = Math.max(0, Math.min(100, this.load));
-
-    let next = this.state;
-    if (this.state !== HEALTH.SEHAT) {
-      if (this.load <= 5) next = HEALTH.PULIH;
-      else if (this.load >= 88) {
-        if (this.state === HEALTH.KRITIS) {
-          const p = 0.4 + this.daysCritical * 0.25;
-          next = rng() < p ? HEALTH.MENINGGAL : HEALTH.KRITIS;
-        } else next = HEALTH.KRITIS;
-      } else if (this.load >= 65) next = HEALTH.KRITIS;
-      else if (this.load >= 40) next = HEALTH.BERGEJALA;
-      else next = HEALTH.TERPAPAR;
-    }
-
-    if (next === HEALTH.KRITIS && prev === HEALTH.KRITIS) this.daysCritical++;
-    else if (next === HEALTH.KRITIS) this.daysCritical = 1;
-
-    this.state = next;
-    if (next !== prev) this.history.push(next);
-    this.treated = false;
-    return this.state;
+  // "Kebenaran" untuk penilaian keputusan pemain:
+  //   - cacar  → seharusnya DITOLAK
+  //   - selain → seharusnya DITERIMA (sehat / kondisi lain non-infeksius)
+  shouldBeRejected() {
+    return this.state === HEALTH.CACAR;
   }
 
   label() { return HEALTH_LABELS[this.state]; }
-}
 
-// Restore HealthFSM dari data tersimpan (save game).
-export function restoreHealthFSM(state, load) {
-  const h = new HealthFSM(state);
-  h.load = typeof load === 'number' ? load : h.load;
-  return h;
+  serialize() { return { state: this.state }; }
+
+  static deserialize(data) {
+    return new HealthFSM(data && data.state ? data.state : HEALTH.SEHAT);
+  }
 }

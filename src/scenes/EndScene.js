@@ -1,4 +1,4 @@
-// EndScene.js — 2 ending: menang (dengan outro cerita) / kalah. + rekap keputusan.
+// EndScene.js — 2 ending: menang (good, dengan outro) / kalah (bad). + rekap.
 export default class EndScene extends Phaser.Scene {
   constructor() { super('EndScene'); }
   init(data) { this.ending = data.ending; this.story = data.story; }
@@ -6,8 +6,7 @@ export default class EndScene extends Phaser.Scene {
   create() {
     const W = this.scale.width, H = this.scale.height;
     this.cameras.main.fadeIn(500);
-    const bg = 'bg-plain';
-    this.add.image(W / 2, H / 2, bg).setDisplaySize(W, H).setAlpha(0.55);
+    this.add.image(W / 2, H / 2, 'bg-plain').setDisplaySize(W, H).setAlpha(0.55);
     this.add.rectangle(W / 2, H / 2, W, H, 0x05060a, this.ending.win ? 0.5 : 0.66);
     this.mountUI();
   }
@@ -18,13 +17,15 @@ export default class EndScene extends Phaser.Scene {
     root.innerHTML = ''; root.style.pointerEvents = 'auto';
 
     const recap = e.decisions.map((d) => {
-      const v = this.story.visitors[d.id];
+      const v = this.story.visitorsById[d.id];
       const verdictWord = d.verdict === 'accept' ? 'Terima' : 'Tolak';
-      const condWord = d.health === 'terinfeksi' ? 'Terinfeksi' : 'Sehat';
+      // health: 'cacar' | 'sehat' | 'kondisi_lain'
+      const condWord = d.health === 'cacar' ? 'Terinfeksi' : 'Aman';
+      const condCls = d.health === 'cacar' ? 'cond-terinfeksi' : 'cond-sehat';
       return `<div class="recap-row ${d.correct ? 'ok' : 'bad'}">
-        <div class="recap-av" style="--c:${v.color}">${v.name[0]}</div>
-        <div class="recap-info"><div class="recap-name">${v.name}</div>
-        <div class="recap-meta">Kau <b>${verdictWord}</b> · sebenarnya <b class="cond-${d.health}">${condWord}</b></div></div>
+        <div class="recap-av" style="--c:${v ? v.color : '#888'}">${d.name[0]}</div>
+        <div class="recap-info"><div class="recap-name">${d.name}</div>
+        <div class="recap-meta">Kau <b>${verdictWord}</b> · sebenarnya <b class="${condCls}">${condWord}</b></div></div>
         <div class="recap-judge">${d.correct ? '✓' : '✕'}</div></div>`;
     }).join('');
 
@@ -40,7 +41,7 @@ export default class EndScene extends Phaser.Scene {
         ${outroHtml}
         <div class="end-stats">
           <span><b>${e.correct}</b>/${e.total} penilaian benar</span>
-          <span><b>${e.infections}</b> wabah lolos</span>
+          <span><b>${e.leaked}</b> wabah lolos</span>
         </div>
         <div class="recap-label">REKAP KEPUTUSAN</div>
         <div class="recap">${recap}</div>
