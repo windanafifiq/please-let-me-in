@@ -5,6 +5,11 @@ export default class LoreScene extends Phaser.Scene {
   create() {
     const W = this.scale.width, H = this.scale.height;
     this.cameras.main.fadeIn(360);
+
+    // Pastikan BGM tetap jalan
+    const bgm = this.sound.get('bgm-main');
+    if (bgm && !bgm.isPlaying) bgm.play();
+
     this.add.image(W / 2, H / 2, 'bg-plain').setDisplaySize(W, H).setAlpha(0.6);
     this.add.rectangle(W / 2, H / 2, W, H, 0x05060a, 0.55);
 
@@ -12,13 +17,13 @@ export default class LoreScene extends Phaser.Scene {
     root.style.pointerEvents = 'auto';
     root.innerHTML = `
       <div class="lore-screen">
-        <div class="lore-head">LORE GAME</div>
+        <div class="lore-head">VIRUS DALAM GAME</div>
         <div class="lore-scroll">
           <div class="lore-sec">
             <h3>Apa itu VRS-24?</h3>
             <p><b>VRS-24 (Varion Rapid Syndrome-24)</b> adalah penyakit menular fiktif yang
             diduga berasal dari sebuah program penelitian biologis rahasia. Virus ini
-            pertama kali terdeteksi di Kota Nusaraya pada <b>5 Desember 2024</b> dan
+            pertama kali terdeteksi di Kota Nusaraya pada <b>4 Desember 2024</b> dan
             menyebar dengan sangat cepat hingga menginfeksi hampir <b>tiga perempat
             penduduk kota</b>. Hingga kini tidak diketahui secara pasti apakah wabah
             tersebut disebabkan oleh kecelakaan laboratorium atau pelepasan yang
@@ -29,7 +34,7 @@ export default class LoreScene extends Phaser.Scene {
             <h3>Bagaimana Gejala VRS-24?</h3>
             <p>Gejala VRS-24 meliputi <b>demam tinggi, kelelahan, pucat, mata memerah, 
             dan ruam yang menyebar di seluruh tubuh</b>. Infeksi ini bersifat fatal dan akan 
-            menyebabkan kematian dalam waktu sekitar <b>32 jam</b> setelah gejala pertama muncul. 
+            menyebabkan kematian dalam waktu sekitar <b>48 jam</b> setelah gejala pertama muncul. 
             Hingga saat ini, satu-satunya penanganan yang diketahui efektif adalah pemberian vaksin 
             sebelum batas waktu tersebut, meskipun virus tetap menetap di dalam tubuh penyintas 
             dalam kondisi tidak aktif.
@@ -52,7 +57,7 @@ export default class LoreScene extends Phaser.Scene {
         <div class="lore-scroll">
 
           <div class="lore-disc lore-disc-top">
-            Virus dalam game ini terinspirasi dari penyakit nyata yang sudah diberantas yaitu:
+            Virus dalam game ini terinspirasi dari penyakit nyata yang sudah diberantas yaitu
             <b>cacar (smallpox / virus variola)</b>. Mekanik dari game ini adalah melihat ciri-ciri warga yang ingin masuk ke dalam gedung, selalu observasi 
             warga jika ingin masuk. Apabila ada indikasi warga terkena virus maka tolak masuk warga, namun apabila tidak ada indikasi maka izinkan masuk warga.
           </div>
@@ -95,8 +100,6 @@ export default class LoreScene extends Phaser.Scene {
             Kesehatan Dunia resmi menyatakan cacar <b>diberantas</b> — satu-satunya penyakit
             menular pada manusia yang pernah berhasil dimusnahkan sepenuhnya. Vaksin cacar
             (oleh Edward Jenner, 1796) juga merupakan vaksin pertama yang pernah dibuat.</p>
-            <p class="lore-note">Outro kemenangan di game — "antivirus ditemukan, kota
-            selamat" — terinspirasi dari kemenangan nyata umat manusia ini.</p>
           </div>
 
           <div class="lore-sec">
@@ -107,13 +110,22 @@ export default class LoreScene extends Phaser.Scene {
           </div>
 
           <div class="lore-sec lore-sources">
-            <h3>Sumber</h3>
+            <h3>Sumber Edukasi: </h3>
             <ul>
               <li>World Health Organization (WHO) — Smallpox overview &amp; history</li>
               <li>Centers for Disease Control and Prevention (CDC) — About Smallpox; Bioterrorism &amp; Smallpox</li>
               <li>NIH / NCBI Bookshelf — Smallpox and Vaccinia</li>
               <li>Encyclopædia Britannica — Smallpox</li>
               <li>History of Vaccines — Biological Weapons, Bioterrorism, and Vaccines</li>
+            </ul>
+          </div>
+
+          <div class="lore-sec lore-sources">
+            <h3>Sumber Asset: </h3>
+            <ul>
+              <li>Gambar: Pinterest, Gemini AI</li>
+              <li>Backsound and SFX: Pixabay, Storyblocks, Elevenlabs AI</li>
+              <li>Font: Google Fonts</li
             </ul>
           </div>
 

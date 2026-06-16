@@ -1,5 +1,7 @@
 // main.js
 import BootScene from './scenes/BootScene.js';
+import RotateScene from './scenes/RotateScene.js';
+import WarningScene from './scenes/WarningScene.js';
 import MenuScene from './scenes/MenuScene.js';
 import NameScene from './scenes/NameScene.js';
 import IntroScene from './scenes/IntroScene.js';
@@ -22,6 +24,26 @@ const config = {
     max: { width: 2560, height: 1440 }
   },
   render: { antialias: true, pixelArt: false },
-  scene: [BootScene, MenuScene, NameScene, IntroScene, GameScene, EndScene, CreditScene, LoreScene, TutorialScene],
+  // Alur awal: RotateScene (HP saja) → WarningScene → BootScene (loading) → MenuScene
+  scene: [RotateScene, WarningScene, BootScene, MenuScene, NameScene, IntroScene, GameScene, EndScene, CreditScene, LoreScene, TutorialScene],
 };
 window.__GAME__ = new Phaser.Game(config);
+
+// Global Helper untuk SFX Klik
+window.playClickSFX = () => {
+  if (!window.__GAME__ || !window.__GAME__.sound) return;
+  
+  // Pastikan audio ada di cache sebelum diputar
+  if (window.__GAME__.cache.audio.exists('sfx-click')) {
+    window.__GAME__.sound.play('sfx-click', { volume: 0.5 });
+  }
+};
+
+
+// Global DOM Click Listener (untuk tombol di UI-root)
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('button, .action-btn, .barrier-btn, .verdict-btn, .warn-btn, .intro-btn, .name-btn, .end-btn, .lore-btn, .credit-btn, .tut-btn');
+  if (btn) {
+    window.playClickSFX();
+  }
+}, true);

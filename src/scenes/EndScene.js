@@ -8,6 +8,17 @@ export default class EndScene extends Phaser.Scene {
     this.cameras.main.fadeIn(500);
     this.add.image(W / 2, H / 2, 'bg-plain').setDisplaySize(W, H).setAlpha(0.55);
     this.add.rectangle(W / 2, H / 2, W, H, 0x05060a, this.ending.win ? 0.5 : 0.66);
+
+    // BGM bg-2 khusus untuk 3 ending selain perfect. 
+    // Jika Perfect (win), kita stop BGM game dan mainkan music kemenangan.
+    if (this.ending.win) {
+      this.sound.stopByKey('bgm-game');
+      this.sound.play('bgm-good', { loop: true, volume: 0.4 });
+    } else {
+      const bgm = this.sound.get('bgm-game');
+      if (bgm && !bgm.isPlaying) bgm.play();
+    }
+
     this.mountUI();
   }
 
@@ -29,7 +40,7 @@ export default class EndScene extends Phaser.Scene {
         <div class="recap-judge">${d.correct ? '✓' : '✕'}</div></div>`;
     }).join('');
 
-    const outroHtml = e.win && e.outro
+    const outroHtml = e.outro
       ? `<div class="outro">${e.outro.split('\n\n').map((p) => `<p>${p}</p>`).join('')}</div>`
       : '';
 
@@ -49,6 +60,7 @@ export default class EndScene extends Phaser.Scene {
       </div>`;
 
     document.getElementById('end-restart').onclick = () => {
+      this.sound.stopAll(); // Pastikan semua music game berhenti sebelum ke menu
       root.innerHTML = ''; root.style.pointerEvents = 'none';
       this.cameras.main.fadeOut(400);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MenuScene'));

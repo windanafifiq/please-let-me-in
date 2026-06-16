@@ -5,6 +5,11 @@ export default class TutorialScene extends Phaser.Scene {
   create() {
     const W = this.scale.width, H = this.scale.height;
     this.cameras.main.fadeIn(300);
+
+    // Pastikan BGM tetap jalan
+    const bgm = this.sound.get('bgm-main');
+    if (bgm && !bgm.isPlaying) bgm.play();
+
     this.add.image(W / 2, H / 2, 'bg-plain').setDisplaySize(W, H).setAlpha(0.5);
     this.add.rectangle(W / 2, H / 2, W, H, 0x05060a, 0.55);
     this.add.particles(0, 0, 'dot', {

@@ -31,30 +31,60 @@ export const VISITORS = [
     health: 'cacar',
     verdict: 'reject',
 
-    intro: 'Perempuan muda berpakaian rapi, mengenakan syal, masker, topi, dan jaket lengan panjang. Tertutup rapat untuk malam yang cukup gerah.',
-    claim: 'Mengaku pegawai kantoran penghuni lantai 3. Baru pulang belanja dari mall.',
+    intro: 'Seorang perempuan muda berdiri sambil memegang beberapa kantong belanja. Ia mengenakan masker, syal, topi, dan jaket lengan panjang meski malam terasa cukup gerah.',
 
-    // Penghalang dibuka BERURUTAN. 'stage' = nama gambar setelah penghalang ini dibuka.
-    // Gambar awal (semua tertutup) = 'full'.
+    claim: 'Mengaku pegawai kantoran penghuni lantai 3. Baru pulang berbelanja dari mall.',
+
     barriers: [
       { id: 'masker', label: 'lepas masker', stage: 'nomask' },
       { id: 'syal_jaket', label: 'lepas syal & jaket lengan panjang', stage: 'arm' },
       { id: 'topi', label: 'lepas topi', stage: 'open' },
     ],
 
-    appearance: 'Tubuhnya tertutup hampir seluruhnya. Gerak-geriknya tampak sedikit lelah.',
+    appearance: 'Tampak lelah setelah berjalan cukup jauh. Sesekali ia mengusap keringat di lehernya.',
 
     exams: {
-      observasi: { value: 'Setelah masker dibuka, wajahnya tampak sedikit pucat. Belum terlihat ruam di wajah.', note: 'Pucat bisa banyak sebabnya.', gatedBy: 'masker' },
-      suhu: { value: '37.5°C', note: '37.5–38°C tergolong demam ringan. Bisa juga akibat terpapar panas.', gatedBy: null },
-      ruam: { value: 'Di beberapa titik lengan dan leher terdapat ruam tipis yang menyebar.', note: 'Ruam menyebar di banyak titik.', gatedBy: 'syal_jaket' },
-      mata: { value: 'Mata tampak baik-baik saja.', note: null, gatedBy: null },
-      tekanan: { value: '90/60 mmHg', note: '90/60 adalah batas bawah normal.', gatedBy: null },
-      rambut: { value: 'Rambut masih lebat, tidak ada kerontokan.', note: null, gatedBy: 'topi' },
+      observasi: {
+        value: 'Setelah masker dibuka, wajahnya tampak sedikit pucat. Ia tersenyum canggung dan berkata, "Mungkin karena belum makan dari sore."',
+        note: 'Pucat bisa disebabkan banyak hal.',
+        gatedBy: 'masker'
+      },
+
+      suhu: {
+        value: '37.5°C',
+        note: '"Di luar panas sekali, mungkin karena itu suhu saya naik sedikit."',
+        gatedBy: null
+      },
+
+      ruam: {
+        value: 'Di beberapa titik lengan dan leher terlihat ruam tipis yang menyebar. Arunika cepat-cepat berkata, "Kulit saya memang sensitif kalau habis seharian pakai baju tebal."',
+        note: 'Ruam menyebar tetap perlu dicurigai.',
+        gatedBy: 'syal_jaket'
+      },
+
+      mata: {
+        value: 'Mata tampak normal.',
+        note: null,
+        gatedBy: null
+      },
+
+      tekanan: {
+        value: '90/60 mmHg',
+        note: '"Saya memang sering tekanan darah rendah."',
+        gatedBy: null
+      },
+
+      rambut: {
+        value: 'Rambut masih lebat, tidak ada kerontokan.',
+        note: null,
+        gatedBy: 'topi'
+      },
+
     },
 
-    truthReject: 'Arunika terinfeksi VRS-24. Ruam menyebar, demam ringan, mata merah, dan tekanan rendah — pola khas cacar tahap awal. Keputusan tepat.',
-    truthAccept: 'Kau meloloskan Arunika yang terinfeksi. Gejalanya halus, tapi polanya jelas cacar. Wabah masuk.',
+    truthReject: 'Arunika terinfeksi VRS-24 tahap awal. Setiap gejalanya memang memiliki penjelasan yang terdengar masuk akal, tetapi ruam yang menyebar ditambah demam ringan dan tekanan darah rendah membentuk pola yang konsisten dengan infeksi.',
+
+    truthAccept: 'Kau meloloskan Arunika. Alasannya terdengar masuk akal satu per satu, tetapi jika dilihat bersama, gejalanya membentuk pola infeksi VRS-24 tahap awal.'
   },
 
   // ============ 2. GOPAL — SEHAT (bersih, penghalang = red herring) ============
@@ -68,26 +98,55 @@ export const VISITORS = [
     health: 'sehat',
     verdict: 'accept',
 
-    intro: 'Mahasiswa semester 4 mengenakan jaket hoodie dengan kupluk menutupi kepala. Tampak biasa saja, sedikit berkeringat.',
-    claim: 'Tinggal bersama neneknya di lantai 2. Baru dari perpustakaan mengerjakan final project.',
+    intro: 'Mahasiswa semester 4 mengenakan jaket hoodie dengan kupluk menutupi kepala. Tampak biasa saja, sedikit berkeringat. Ia tampak lelah dan beberapa kali menguap saat menunggu pemeriksaan.',
+    claim: 'Tinggal bersama neneknya di lantai 2. Baru pulang dari perpustakaan kampus mengerjakan final project.',
 
     barriers: [
       { id: 'hoodie', label: 'lepas jaket hoodie', stage: 'open' },
     ],
 
-    appearance: 'Terlihat normal. Ada sedikit keringat, wajar untuk yang baru berjalan.',
+    appearance: 'Terlihat lelah dan sedikit berkeringat. Sesekali mengucek matanya.',
 
     exams: {
-      observasi: { value: 'Tidak pucat. Berkeringat ringan, tampak seperti habis berjalan/beraktivitas.', note: 'Keringat ringan biasa setelah aktivitas.', gatedBy: null },
-      suhu: { value: '36.5°C', note: 'Suhu normal.', gatedBy: null },
-      ruam: { value: 'Setelah hoodie dibuka, ia memakai kaus pendek. Kulit bersih, tidak ada ruam.', note: null, gatedBy: 'hoodie' },
-      mata: { value: 'Mata jernih, normal.', note: null, gatedBy: null },
-      tekanan: { value: '120/80 mmHg', note: 'Tekanan normal untuk dewasa.', gatedBy: null },
-      rambut: { value: 'Rambut lebat dan normal.', note: null, gatedBy: 'hoodie' },
+      observasi: {
+        value: 'Tidak pucat. Berkeringat ringan dan tampak mengantuk. "Saya belum tidur dari semalam karena deadline tugas."',
+        note: 'Kurang tidur dapat menyebabkan kelelahan dan keringat ringan.',
+        gatedBy: null
+      },
+
+      suhu: {
+        value: '36.5°C',
+        note: 'Suhu normal.',
+        gatedBy: null
+      },
+
+      ruam: {
+        value: 'Setelah hoodie dibuka, ia memakai kaus pendek. Kulit bersih tanpa ruam atau bintik mencurigakan.',
+        note: null,
+        gatedBy: 'hoodie'
+      },
+
+      mata: {
+        value: 'Mata sedikit merah. Ia mengaku terlalu lama menatap layar laptop.',
+        note: 'Mata merah tidak selalu berarti infeksi.',
+        gatedBy: null
+      },
+
+      tekanan: {
+        value: '120/80 mmHg',
+        note: 'Tekanan normal.',
+        gatedBy: null
+      },
+
+      rambut: {
+        value: 'Rambut lebat dan normal.',
+        note: null,
+        gatedBy: 'hoodie'
+      }
     },
 
-    truthAccept: 'Gopal sehat. Hoodie hanya gaya berpakaian, bukan penyembunyi gejala. Keputusan tepat.',
-    truthReject: 'Kau menolak Gopal yang sehat. Penampilan tertutup ternyata tak menyembunyikan apa pun.',
+    truthAccept: 'Gopal sehat. Kelelahan, mata merah, dan keringat ringan berasal dari kurang tidur dan aktivitasnya sebagai mahasiswa. Tidak ada demam maupun ruam yang mengarah pada VRS-24. Keputusan tepat.',
+    truthReject: 'Kau menolak Gopal yang sehat. Penampilannya memang terlihat lelah, tetapi tidak ada pola gejala yang mengarah pada VRS-24.',
   },
 
   // ============ 3. KAKEK HASAN — SEHAT (jebakan: demam+botak tanpa ruam) ============
@@ -101,26 +160,55 @@ export const VISITORS = [
     health: 'kondisi_lain',   // heat-stroke ringan, BUKAN cacar
     verdict: 'accept',
 
-    intro: 'Lelaki tua mengenakan topi dan kaus singlet. Keringatnya bercucuran cukup banyak.',
-    claim: 'Pensiunan guru, tinggal sendiri di lantai 2. Baru mengunjungi kawan lamanya.',
+    intro: 'Seorang lelaki tua mengenakan topi lusuh dan kaus singlet. Bajunya basah oleh keringat seolah baru berjalan jauh. Ia mengipasi dirinya dengan koran yang digulung.',
+    claim: 'Pensiunan guru yang tinggal sendiri di lantai 2. Baru pulang mengunjungi kawan lamanya di ujung kota.',
 
     barriers: [
       { id: 'topi', label: 'lepas topi', stage: 'open' },
     ],
 
-    appearance: 'Berkeringat banyak. Tampak kepanasan, napas sedikit terengah.',
+    appearance: 'Berkeringat deras dan tampak kepanasan. Napasnya sedikit terengah, tetapi ia masih bisa bercanda dan berbicara dengan lancar.',
 
     exams: {
-      observasi: { value: 'Keringat berlebih, tetapi tidak pucat. Wajah justru kemerahan seperti kepanasan.', note: 'Kemerahan karena panas berbeda dari pucat sakit.', gatedBy: null },
-      suhu: { value: '37.6°C', note: '37.5–38°C demam ringan. Bisa juga akibat kepanasan (heat-stroke ringan).', gatedBy: null },
-      ruam: { value: 'Tidak ada ruam sama sekali di kulit.', note: null, gatedBy: null },
-      mata: { value: 'Mata normal, tidak merah.', note: null, gatedBy: null },
-      tekanan: { value: '130/80 mmHg', note: 'Normal untuk lansia.', gatedBy: null },
-      rambut: { value: 'Setelah topi dibuka, kepalanya botak.', note: 'Kebotakan umum pada lansia, bukan selalu gejala.', gatedBy: 'topi' },
+      observasi: {
+        value: 'Keringat berlebih, tetapi tidak pucat. Wajahnya justru kemerahan. "Aduh, panas sekali hari ini. Tadi angkotnya penuh sesak."',
+        note: 'Kemerahan karena panas berbeda dengan pucat akibat sakit.',
+        gatedBy: null
+      },
+
+      suhu: {
+        value: '37.6°C',
+        note: '"Mungkin karena saya jalan kaki dari halte, Nak."',
+        gatedBy: null
+      },
+
+      suhu: {
+        value: '37.6°C',
+        note: '"Mungkin karena saya jalan kaki dari halte, Nak."',
+        gatedBy: null
+      },
+
+      mata: {
+        value: 'Mata normal dan tidak merah.',
+        note: null,
+        gatedBy: null
+      },
+
+      tekanan: {
+        value: '130/80 mmHg',
+        note: 'Normal untuk lansia.',
+        gatedBy: null
+      },
+
+      rambut: {
+        value: 'Setelah topi dibuka, kepalanya botak.',
+        note: '"Sudah botak sejak sepuluh tahun lalu," katanya sambil tertawa.',
+        gatedBy: 'topi'
+      }
     },
 
-    truthAccept: 'Kakek Hasan sehat. Demam ringannya akibat kepanasan, dan kebotakan wajar di usianya. Tanpa ruam, ia bukan kasus cacar. Keputusan tepat.',
-    truthReject: 'Kau menolak Kakek Hasan yang sehat. Demam dan botaknya menggoda untuk dicurigai, tapi tanpa ruam ia tidak terinfeksi.',
+    truthAccept: 'Kakek Hasan tidak terinfeksi. Keringat berlebih dan suhu tubuh yang sedikit meningkat berasal dari kelelahan serta cuaca panas. Tidak ditemukan ruam maupun tanda khas VRS-24. Keputusan tepat.',
+    truthReject: 'Kau menolak Kakek Hasan yang sehat. Usia lanjut, demam ringan, dan kebotakan memang terlihat mencurigakan, tetapi tidak ada pola gejala yang mengarah pada VRS-24.'
   },
 
   // ============ 4. ADIT — CACAR (jelas, parah) ============
@@ -134,27 +222,58 @@ export const VISITORS = [
     health: 'cacar',
     verdict: 'reject',
 
-    intro: 'Pria mengenakan masker dan kacamata hitam. Berdiri agak goyah, napasnya berat.',
-    claim: 'Teknisi AC, tinggal di lantai 5 bersama istrinya. Baru pulang shift kerja.',
+    intro: 'Seorang pria mengenakan masker dan kacamata hitam. Ia membawa tas perkakas teknisi AC di bahunya. Dari kejauhan ia tampak biasa saja, tetapi sesekali harus bersandar untuk menjaga keseimbangan.',
+
+    claim: 'Teknisi AC, tinggal di lantai 5 bersama istrinya. Baru pulang dari shift kerja.',
 
     barriers: [
       { id: 'masker', label: 'lepas masker', stage: 'nomask' },
       { id: 'kacamata', label: 'lepas kacamata dan gulung lengan baju', stage: 'open' },
     ],
 
-    appearance: 'Tampak lemah dan tidak sehat. Berdiri tidak stabil.',
+    appearance: 'Ia berusaha terlihat tenang dan terus mengatakan dirinya baik-baik saja, tetapi gerakannya tampak lambat dan tenaganya seperti terkuras.',
 
     exams: {
-      observasi: { value: 'Setelah masker dibuka, wajahnya pucat pasi.', note: null, gatedBy: 'masker' },
-      suhu: { value: '39.0°C', note: 'Demam tinggi.', gatedBy: null },
-      ruam: { value: 'Saat lengan digulung, terlihat ruam merah yang banyak dan menyebar.', note: 'Ruam menyebar luas.', gatedBy: 'kacamata' },
-      mata: { value: 'Setelah kacamata dilepas, matanya merah berair.', note: null, gatedBy: 'kacamata' },
-      tekanan: { value: '80/60 mmHg', note: 'Tekanan darah rendah.', gatedBy: null },
-      rambut: { value: 'Rambut masih ada, belum rontok.', note: null, gatedBy: null },
+      observasi: {
+        value: 'Setelah masker dibuka, wajahnya terlihat pucat. Ia berkata, "Cuma capek kerja dari pagi, Pak."',
+        note: 'Kelelahan memang bisa membuat wajah terlihat pucat.',
+        gatedBy: 'masker'
+      },
+
+      suhu: {
+        value: '39.0°C',
+        note: '"Tadi kerja di atap gedung. Panasnya luar biasa."',
+        gatedBy: null
+      },
+
+      ruam: {
+        value: 'Saat lengan digulung, terlihat ruam merah yang menyebar luas di kedua lengan.',
+        note: 'Ruam menyebar merupakan tanda yang sulit dijelaskan oleh kelelahan biasa.',
+        gatedBy: 'kacamata'
+      },
+
+      mata: {
+        value: 'Setelah kacamata dilepas, matanya merah dan berair.',
+        note: '"Kena debu waktu servis AC."',
+        gatedBy: 'kacamata'
+      },
+
+      tekanan: {
+        value: '80/60 mmHg',
+        note: 'Tekanan darah rendah.',
+        gatedBy: null
+      },
+
+      rambut: {
+        value: 'Rambut masih normal.',
+        note: null,
+        gatedBy: null
+      }
     },
 
-    truthReject: 'Adit terinfeksi VRS-24 parah. Demam tinggi, ruam menyebar, mata merah, tekanan rendah — semua tanda lengkap. Keputusan tepat.',
-    truthAccept: 'Kau meloloskan Adit yang jelas terinfeksi parah. Wabah masuk dengan cepat.',
+    truthReject: 'Adit terinfeksi VRS-24 tahap lanjut. Ia mencoba menjelaskan setiap gejala dengan pekerjaannya, tetapi demam tinggi, ruam menyebar, mata merah, dan tekanan darah rendah membentuk pola yang sangat jelas. Keputusan tepat.',
+
+    truthAccept: 'Kau meloloskan Adit. Alasan-alasannya terdengar masuk akal jika dilihat satu per satu, tetapi keseluruhan gejalanya menunjukkan infeksi VRS-24 yang sudah cukup parah.'
   },
 
   // ============ 5. RAHMA & TITA — SEHAT (jebakan: bayi habis imunisasi) ============
@@ -168,24 +287,31 @@ export const VISITORS = [
     health: 'sehat',
     verdict: 'accept',
 
-    intro: 'Seorang ibu menggendong anak perempuannya (Tita, 1,5 tahun). Si kecil tampak mengantuk di pelukan ibunya. Wajah keduanya tenang.',
-    claim: 'Istri Adit (lantai 5). Baru pulang dari imunisasi rutin Tita.',
+    intro: 'Seorang ibu muda menggendong anak perempuannya yang berusia sekitar satu setengah tahun. Tita tampak mengantuk di pelukan ibunya. Keduanya terlihat tenang dan sehat.',
+
+    claim: 'Istri Adit penghuni lantai 5. Baru pulang dari puskesmas setelah imunisasi rutin Tita.',
 
     barriers: [],   // tidak ada penghalang — semua terlihat
 
-    appearance: 'Keduanya tampak tenang. Tidak ada yang pucat atau berkeringat berlebih.',
+    appearance: 'Rahma tampak lelah karena seharian mengurus anak, tetapi tidak menunjukkan tanda-tanda sakit.',
 
     exams: {
-      observasi: { value: 'Ibu dan bayi tampak sehat. Tidak ada tanda lemah atau pucat.', note: null, gatedBy: null },
-      suhu: { value: 'Rahma 36.5°C (normal). Tita 36.8°C (normal).', note: 'Keduanya suhu normal.', gatedBy: null },
-      ruam: { value: 'Rahma: kulit bersih. Tita: ada SATU bintik kecil di lengan atas (bekas suntik imunisasi).', note: 'Satu bintik di lokasi suntik berbeda dari ruam.', gatedBy: null },
+      observasi: {
+        value: 'Ibu dan anak tampak sehat. Saat ditanya soal Adit, Rahma menjawab, "Mas Adit berangkat kerja pagi tadi. Mungkin sudah sampai rumah duluan."',
+        note: 'Tidak ada tanda infeksi yang terlihat.',
+        gatedBy: null
+      },
+
+      suhu: { value: 'Rahma 36.5°C (normal). Tita 36.8°C (normal).', note: 'Keduanya dalam rentang normal.', gatedBy: null },
+      ruam: { value: 'Rahma: kulit bersih. Tita: terdapat satu bintik kecil di lengan atas bekas suntikan imunisasi.', note: 'Satu titik bekas suntikan berbeda dari ruam yang menyebar.', gatedBy: null },
       mata: { value: 'Mata keduanya normal.', note: null, gatedBy: null },
       tekanan: { value: 'Rahma 140/90 mmHg (agak tinggi). Tita 80/55 (normal bayi).', note: '140/90 cenderung hipertensi, bukan gejala infeksi.', gatedBy: null },
       rambut: { value: 'Rahma normal. Tita berambut tipis halus (wajar untuk batita).', note: 'Rambut tipis pada anak kecil adalah hal normal.', gatedBy: null },
     },
 
-    truthAccept: 'Rahma dan Tita sehat. Bintik di lengan Tita adalah bekas imunisasi (satu titik), bukan ruam cacar yang menyebar. Tekanan tinggi Rahma adalah hipertensi. Keputusan tepat.',
-    truthReject: 'Kau menolak ibu dan bayi yang sehat. Satu bekas suntik bukan ruam cacar — kau salah membaca pola.',
+    truthAccept: 'Rahma dan Tita sehat. Hubungan keluarga dengan Adit memang menimbulkan kecurigaan, tetapi pemeriksaan tidak menemukan gejala VRS-24 pada keduanya. Keputusan tepat.',
+
+truthReject: 'Kau menolak Rahma dan Tita karena mengaitkan mereka dengan kondisi Adit. Pemeriksaan menunjukkan keduanya sehat. Kecurigaanmu didasarkan pada hubungan keluarga, bukan bukti infeksi.',
   },
 
   // ============ 6. IBU MIMA — CACAR (menyamar: tiap gejala ada "alasan kerja") ============
@@ -215,8 +341,8 @@ export const VISITORS = [
       rambut: { value: 'Rambut masih lebat.', note: null, gatedBy: null },
     },
 
-    truthReject: 'Ibu Mima terinfeksi VRS-24. Tiap gejala diberi alasan pekerjaan yang masuk akal — tapi demam + ruam menyebar + mata merah adalah pola cacar, bukan kebetulan kerja. Keputusan tepat.',
-    truthAccept: 'Kau meloloskan Ibu Mima. Alasan-alasannya meyakinkan, tapi pola gejalanya cacar. Konteks menipumu — wabah masuk.',
+    truthReject: 'Ibu Mima terinfeksi VRS-24. Tiap gejala diberi alasan pekerjaan yang masuk akal — tapi demam + ruam menyebar + mata merah adalah pola VRS-24, bukan kebetulan kerja. Keputusan tepat.',
+    truthAccept: 'Kau meloloskan Ibu Mima. Alasan-alasannya meyakinkan, tapi pola gejalanya VRS-24. Konteks menipumu — wabah masuk.',
   },
 ];
 

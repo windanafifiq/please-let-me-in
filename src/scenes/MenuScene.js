@@ -9,6 +9,23 @@ export default class MenuScene extends Phaser.Scene {
     const W = this.scale.width, H = this.scale.height;
     UI.unmount();
 
+    // Suara judul ala Resident Evil (sekali per sesi game)
+    if (!this.registry.get('titleVoicePlayed')) {
+      this.registry.set('titleVoicePlayed', true);
+
+      this.time.delayedCall(500, () => {
+        this.sound.play('sfx-title-voice', { volume: 0.8 });
+        
+        // Mulai BGM setelah jeda suara judul (biar dramatis)
+        this.time.delayedCall(2200, () => {
+          this.playMenuBGM();
+        });
+      });
+    } else {
+      // Jika sudah pernah diputar, langsung pastikan BGM jalan
+      this.playMenuBGM();
+    }
+
     // Ukuran adaptif: kecilkan judul di layar sempit/pendek agar tak nabrak tombol
     const isCompact = W < 760 || H < 680;
     const titleSize = isCompact ? '52px' : '80px';
@@ -39,39 +56,45 @@ export default class MenuScene extends Phaser.Scene {
     const triggerLightning = () => {
 
       // cahaya petir lembut
-      flash.setAlpha(0.12);
+      // Mainkan suara petir 
+      this.sound.play('sfx-thunder', { volume: 0.8 });
 
-      this.cameras.main.shake(250, 0.002);
+      // Beri jeda 120ms agar terasa lebih natural (suara -> cahaya/gambar)
+      this.time.delayedCall(800, () => {
+        // Efek kilat lebih putih (alpha 0.7) dan bercahaya (BlendMode ADD)
+        flash.setAlpha(0.3).setBlendMode(Phaser.BlendModes.ADD);
+        this.cameras.main.shake(200, 0.005);
 
-      // door2 muncul perlahan
-      this.tweens.add({
-        targets: bgHorror,
-        alpha: 0.3,
-        duration: 180,
-        ease: 'Sine.out',
+        // door2 muncul perlahan
+        this.tweens.add({
+          targets: bgHorror,
+          alpha: 0.3,
+          duration: 180,
+          ease: 'Sine.out',
 
-        onComplete: () => {
+          onComplete: () => {
 
-          // tahan sebentar supaya sempat terlihat
-          this.time.delayedCall(250, () => {
+            // tahan sebentar supaya sempat terlihat
+            this.time.delayedCall(750, () => {
 
-            // hilang perlahan
-            this.tweens.add({
-              targets: bgHorror,
-              alpha: 0,
-              duration: 350,
-              ease: 'Sine.in'
+              // hilang perlahan
+              this.tweens.add({
+                targets: bgHorror,
+                alpha: 0,
+                duration: 600,
+                ease: 'Sine.in'
+              });
+
+              this.tweens.add({
+                targets: flash,
+                alpha: 0,
+                duration: 350
+              });
+
             });
 
-            this.tweens.add({
-              targets: flash,
-              alpha: 0,
-              duration: 350
-            });
-
-          });
-
-        }
+          }
+        });
       });
 
       this.time.delayedCall(
@@ -172,13 +195,13 @@ export default class MenuScene extends Phaser.Scene {
     const sum = hasSave ? SaveManager.summary() : null;
 
     const btns = [];
-    btns.push({ label: 'START GAME', action: () => this.startNew() });
+    btns.push({ label: 'MULAI GAME', action: () => this.startNew() });
     if (hasSave) {
-      btns.push({ label: `CONTINUE`, action: () => this.continueGame(), accent: true });
+      btns.push({ label: `LANJUTKAN`, action: () => this.continueGame(), accent: true });
     }
     btns.push({ label: 'CARA BERMAIN', action: () => this.scene.start('TutorialScene'), ghost: true });
-    btns.push({ label: 'LORE & REFERENCE', action: () => this.scene.start('LoreScene'), ghost: true });
-    btns.push({ label: 'CREDIT', action: () => this.scene.start('CreditScene'), ghost: true });
+    btns.push({ label: 'CERITA DAN REFERENSI', action: () => this.scene.start('LoreScene'), ghost: true });
+    btns.push({ label: 'KREDIT', action: () => this.scene.start('CreditScene'), ghost: true });
 
     // Susun tombol mulai DI BAWAH subtitle, bukan dari titik tengah layar.
     // Dengan begitu tombol tidak pernah naik menabrak teks di atasnya.
@@ -202,7 +225,10 @@ export default class MenuScene extends Phaser.Scene {
 
       rect.on('pointerover', () => { rect.setScale(1.05); txt.setScale(1.05); rect.setAlpha(0.9); });
       rect.on('pointerout', () => { rect.setScale(1); txt.setScale(1); rect.setAlpha(1); });
-      rect.on('pointerdown', b.action);
+      rect.on('pointerdown', () => {
+        window.playClickSFX();
+        b.action();
+      });
       y += gap;
     }
 
@@ -211,11 +237,23 @@ export default class MenuScene extends Phaser.Scene {
   }
 
   startNew() {
+    this.sound.stopByKey('bgm-main');
     this.cameras.main.fadeOut(380, 5, 6, 10);
     this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('NameScene'));
   }
   continueGame() {
+    this.sound.stopByKey('bgm-main');
     this.cameras.main.fadeOut(380, 5, 6, 10);
     this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('GameScene', { continue: true }));
+  }
+
+  playMenuBGM() {
+    let bgm = this.sound.get('bgm-main');
+    if (!bgm) {
+      bgm = this.sound.add('bgm-main', { loop: true, volume: 0.3 });
+      bgm.play();
+    } else if (!bgm.isPlaying) {
+      bgm.play();
+    }
   }
 }

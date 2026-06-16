@@ -8,6 +8,14 @@ export default class IntroScene extends Phaser.Scene {
 
     this.cameras.main.fadeIn(400);
 
+    // Mulai music latar game (bg-2)
+    const bgm = this.sound.get('bgm-game');
+    if (!bgm) {
+      this.sound.play('bgm-game', { loop: true, volume: 0.35 });
+    } else if (!bgm.isPlaying) {
+      bgm.play();
+    }
+
     this.add.image(W / 2, H / 2, 'photo-door')
       .setDisplaySize(W, H)
       .setAlpha(0.7);
@@ -25,7 +33,7 @@ export default class IntroScene extends Phaser.Scene {
 
     const pages = [
       [
-        '5 Desember 2024, 09:45.',
+        '4 Desember 2024, 01:45 AM.',
 
         'Di Nusaraya, sebuah kota pelabuhan yang tenang, aktivitas berjalan seperti biasa.',
 
@@ -33,13 +41,13 @@ export default class IntroScene extends Phaser.Scene {
 
         'Keberadaannya dirahasiakan dari publik dan hanya diketahui oleh segelintir pejabat tinggi.',
 
-        'Pagi itu, sebuah insiden terjadi.',
+        'Dini hari, sebuah insiden terjadi.',
 
         'Sesuatu berhasil keluar dari laboratorium tersebut.'
       ],
 
       [
-        '5 Desember 2024, 14:30.',
+        '4 Desember 2024, 19:30 PM.',
 
         'Beberapa warga mulai berdatangan ke rumah sakit dengan gejala yang tidak biasa.',
 
@@ -55,7 +63,7 @@ export default class IntroScene extends Phaser.Scene {
       ],
 
       [
-        '5 Desember 2024, 19:50.',
+        '4 Desember 2024, 23:50 PM.',
 
         'Kota Nusaraya memasuki fase outbreak.',
 
@@ -67,11 +75,11 @@ export default class IntroScene extends Phaser.Scene {
 
         'Mereka masih bisa berjalan. Masih bisa berbicara. Masih bisa memohon untuk diselamatkan.',
 
-        'Namun dalam waktu kurang dari 24 jam, sebagian besar korban akan mati.',
+        'Namun dalam waktu kurang dari 48 jam, sebagian besar korban akan mati.',
 
         `Kau, ${name}, kini menjaga sebuah rumah susun yang tersegel dari dunia luar.`,
 
-        'Selama tiga hari ke depan, setiap orang yang mengetuk pintumu harus diperiksa.',
+        'Selama beberapa hari ke depan, setiap orang yang mengetuk pintumu harus diperiksa.',
 
         'Satu keputusan yang salah.',
 

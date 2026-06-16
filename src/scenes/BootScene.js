@@ -53,6 +53,13 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('credit-maker1', 'assets/credits/maker1.png');
     this.load.image('credit-maker2', 'assets/credits/maker2.png');
     this.load.image('credit-lecturer', 'assets/credits/lecturer.png');
+    this.load.audio('sfx-click', 'assets/music/click-sfx.wav');
+    this.load.audio('sfx-thunder', 'assets/music/thunder-sfx.wav'); // Suara petir
+    this.load.audio('bgm-main', 'assets/music/bg-1.wav');             // Music Latar Menu
+    this.load.audio('bgm-game', 'assets/music/bg-2.wav');             // Music Latar Game & Intro
+    this.load.audio('bgm-good', 'assets/music/bg-good.wav');           // Music Perfect Ending
+    this.load.audio('sfx-title-voice', 'assets/music/title-sfx.wav'); // Placeholder suara judul
+
 
     this.load.on('loaderror', (file) => {
       this._failed = this._failed || new Set();

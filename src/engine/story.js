@@ -46,16 +46,90 @@ export class Story {
     const correct = this.decisions.filter((d) => d.correct).length;
     const wrong = total - correct;
 
-    // kesalahan fatal: meloloskan cacar (verdict accept, health cacar)
     const leaked = this.decisions.filter(
       (d) => d.verdict === VERDICT.ACCEPT && d.health === 'cacar'
     ).length;
-    // salah tolak orang sehat
+
     const wrongReject = this.decisions.filter(
       (d) => d.verdict === VERDICT.REJECT && d.health !== 'cacar'
     ).length;
 
-    const win = wrong === 0;
+    let win = false;
+    let title = '';
+    let summary = '';
+    let outro = '';
+
+    // ===== PERFECT ENDING =====
+    if (leaked === 0 && wrongReject === 0) {
+      win = true;
+
+      title = 'Fajar yang Aman';
+
+      summary =
+        'Tidak ada satu pun kesalahan sepanjang shift. Mereka yang terinfeksi berhasil dihentikan sebelum memasuki gedung, sementara para penghuni yang sehat dapat kembali ke rumah mereka dengan aman.';
+
+      outro =
+        'Fajar tiba.\n\n' +
+        'Untuk pertama kalinya setelah berminggu-minggu, berita pagi membawa sedikit harapan.\n\n' +
+        'Pemerintah mengumumkan bahwa vaksin VRS-24 mulai didistribusikan ke berbagai kota. Jumlahnya masih terbatas, tetapi cukup untuk memberi harapan bahwa wabah ini tidak akan berlangsung selamanya.\n\n' +
+        'Di dalam gedung, para penghuni memulai hari seperti biasa.\n\n' +
+        'Anak-anak berangkat sekolah. Para pekerja bersiap menjalani shift mereka. Lampu-lampu apartemen menyala satu per satu tanpa ketakutan yang selama ini menyelimuti kota.\n\n' +
+        'Sebagian dari mereka tidak pernah tahu betapa dekatnya wabah dengan rumah mereka malam itu.\n\n' +
+        'Dan mereka memang tidak perlu tahu.\n\n' +
+        'Tugas seorang penjaga bukan menjadi pahlawan yang dikenang.\n\n' +
+        'Tugasnya adalah memastikan semua orang bisa menjalani hari esok.';
+
+    }
+
+    // ===== WRONG REJECT ONLY =====
+    else if (leaked === 0 && wrongReject > 0) {
+      title = 'Keputusan yang Salah';
+
+      summary =
+        `Tidak ada wabah yang masuk, tetapi ${wrongReject} penghuni sehat kau tolak karena kecurigaan yang keliru.`;
+
+      outro =
+        'Gedung memang tetap aman malam itu.\n\n' +
+        'Namun beberapa penghuni yang sehat terpaksa menghabiskan malam di luar tempat yang seharusnya menjadi rumah mereka.\n\n' +
+        'Keesokan harinya, kabar tentang keputusanmu menyebar dari pintu ke pintu.\n\n' +
+        'Tidak ada wabah yang masuk.\n\n' +
+        'Tetapi kepercayaan para penghuni mulai retak.';
+
+    }
+
+    // ===== LEAKED ONLY =====
+    else if (leaked > 0 && wrongReject === 0) {
+      title = 'Wabah Menembus Pintu';
+
+      summary =
+        `Kau meloloskan ${leaked} orang yang terinfeksi VRS-24. Pada awalnya tidak ada yang terlihat berbeda, tetapi wabah telah memasuki gedung.`;
+
+      outro =
+        'Beberapa jam kemudian laporan pertama masuk.\n\n' +
+        'Demam. Ruam. Mata merah.\n\n' +
+        'Sebelum fajar tiba, semakin banyak penghuni mulai menunjukkan gejala yang sama.\n\n' +
+        'VRS-24 menyebar jauh lebih cepat daripada yang diperkirakan.\n\n' +
+        'Keputusan yang tampak kecil malam itu menjadi awal dari sebuah wabah.';
+
+    }
+
+    // ===== WORST ENDING =====
+    else {
+      title = 'Malam yang Gagal';
+
+      summary =
+        `Kau meloloskan ${leaked} orang yang terinfeksi dan menolak ${wrongReject} penghuni yang sebenarnya sehat.`;
+
+      outro =
+        'Menjelang fajar, laporan kasus pertama mulai berdatangan.\n\n' +
+        'Demam. Ruam. Mata merah.\n\n' +
+        'Di saat yang sama, beberapa penghuni yang sehat masih berada di luar gedung karena keputusanmu.\n\n' +
+        'Mereka yang seharusnya dilindungi justru dihukum.\n\n' +
+        'Mereka yang seharusnya dihentikan justru berhasil masuk.\n\n' +
+        'Ketika matahari terbit, tidak ada yang bisa disebut sebagai kemenangan.\n\n' +
+        'Malam itu, kau gagal di kedua sisi pintu.';
+
+    }
 
     return {
       win,
@@ -64,15 +138,9 @@ export class Story {
       wrong,
       leaked,
       wrongReject,
-      title: win ? 'Gedung Selamat' : 'Wabah Menembus Pintu',
-      summary: win
-        ? 'Sepanjang shift, tidak ada satu pun kesalahan. Setiap orang sakit kau tahan, setiap orang sehat kau izinkan. Gedung aman malam ini.'
-        : (leaked > 0
-            ? `Kau meloloskan ${leaked} orang yang terinfeksi. Menjelang dini hari, gejala menyebar ke seluruh lantai.`
-            : `Kau menolak ${wrongReject} orang yang sebenarnya sehat. Mereka terlantar di luar, dan kepercayaan pada penjaga runtuh.`),
-      outro: win
-        ? 'Fajar tiba. Koridor masih sunyi dan aman. Untuk hari ini, kau telah menjaga mereka semua.'
-        : null,
+      title,
+      summary,
+      outro,
       decisions: this.decisions,
     };
   }

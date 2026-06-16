@@ -12,6 +12,13 @@ export default class GameScene extends Phaser.Scene {
     const W = this.scale.width, H = this.scale.height;
     this.cameras.main.fadeIn(400);
 
+    // Pastikan BGM game (bg-2) tetap jalan
+    const bgm = this.sound.get('bgm-game');
+    if (bgm && !bgm.isPlaying) bgm.play();
+    else if (!bgm) {
+      this.sound.play('bgm-game', { loop: true, volume: 0.35 });
+    }
+
     if (this.initData.continue) {
       const data = SaveManager.load();
       this.story = data ? Story.deserialize(data) : new Story(Date.now(), 'Penjaga');
