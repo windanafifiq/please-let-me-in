@@ -55,13 +55,28 @@ export class Story {
       (d) => d.verdict === VERDICT.REJECT && d.health !== 'cacar'
     ).length;
 
+    // jumlah semua keputusan yang berupa TOLAK
+    const rejectedAll = this.decisions.filter(
+      (d) => d.verdict === VERDICT.REJECT
+    ).length;
+
     let win = false;
     let title = '';
     let summary = '';
     let outro = '';
+    let secret = false;
+
+    // ===== SECRET ENDING: tolak SEMUA orang =====
+    // Syarat: ada pengunjung, dan setiap keputusan adalah TOLAK.
+    if (total > 0 && rejectedAll === total) {
+      secret = true;
+      title = t('end.secret.title');
+      summary = t('end.secret.summary');
+      outro = t('end.secret.outro');
+    }
 
     // ===== PERFECT ENDING =====
-    if (leaked === 0 && wrongReject === 0) {
+    else if (leaked === 0 && wrongReject === 0) {
       win = true;
       title = t('end.perfect.title');
       summary = t('end.perfect.summary');
@@ -91,6 +106,7 @@ export class Story {
 
     return {
       win,
+      secret,                // ⟵ tambahkan flag ini
       total,
       correct,
       wrong,

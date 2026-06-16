@@ -209,6 +209,17 @@ const DICT = {
         en: 'As dawn approached, reports of the first cases began to pour in.\n\nFever. Rash. Red eyes.\n\nAt the same time, several healthy residents remained outside the building because of your decisions.\n\nThose who should have been protected were punished.\n\nThose who should have been stopped successfully entered.\n\nWhen the sun rose, there was nothing that could be called a victory.\n\nThat night, you failed on both sides of the door.',
     },
 
+    // ─── Secret Ending: tolak semua ──────────────────────────────
+    'end.secret.title': { id: 'ENDING RAHASIA', en: 'SECRET ENDING' },
+    'end.secret.summary': {
+        id: 'Tidak seorang pun kau izinkan masuk malam itu. Tidak yang sakit. Tidak yang sehat. Tidak ada seorang pun.',
+        en: 'You let no one in that night. Not the sick. Not the healthy. Not a single soul.',
+    },
+    'end.secret.outro': {
+        id: 'Malam semakin larut.\n\nDari atap gedung, kau memandangi Kota Nusaraya yang perlahan tenggelam dalam kekacauan.\n\nSirene ambulans bersahut-sahutan. Lampu darurat berkedip di kejauhan. Orang-orang berlarian mencari tempat yang aman.\n\nDi jalan raya, beberapa korban mulai roboh satu per satu.\n\nKau tidak menunjukkan ekspresi apa pun.\n\nKarena semua ini bukan kecelakaan.\n\nBukan bagi dirimu.\n\nKau mengetahui keberadaan laboratorium bawah tanah itu jauh sebelum wabah terjadi.\n\nKau melaporkannya.\n\nKau memperingatkan mereka.\n\nTak seorang pun mau mendengar.\n\nMaka kau memutuskan memberikan sesuatu yang tidak bisa mereka abaikan.\n\nBesok pagi, seluruh negeri akan mengetahui apa yang tersembunyi di bawah Rumah Sakit Umum Nusaraya.\n\nMereka akan menyebutmu penjahat.\n\nMungkin mereka benar.\n\nTetapi akhirnya...\n\nMereka juga akan mengetahui kebenaran.',
+        en: 'The night grows late.\n\nFrom the rooftop, you watch Nusaraya City slowly sink into chaos.\n\nAmbulance sirens wail back and forth. Emergency lights blink in the distance. People run searching for somewhere safe.\n\nOn the main road, victims begin to collapse one by one.\n\nYou show no expression at all.\n\nBecause none of this was an accident.\n\nNot for you.\n\nYou knew about the underground laboratory long before the outbreak.\n\nYou reported it.\n\nYou warned them.\n\nNo one would listen.\n\nSo you decided to give them something they could not ignore.\n\nTomorrow morning, the whole country will know what was hidden beneath Nusaraya General Hospital.\n\nThey will call you a criminal.\n\nPerhaps they are right.\n\nBut in the end...\n\nThey will also know the truth.',
+    },
+
     // ─── Visitors (data/visitors.js) ────────────────────────────
     'v01.name': { id: 'Arunika', en: 'Arunika' },
     'v01.job': { id: 'Pegawai kantoran', en: 'Office worker' },

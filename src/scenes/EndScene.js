@@ -11,8 +11,13 @@ export default class EndScene extends Phaser.Scene {
     this.add.image(W / 2, H / 2, 'bg-plain').setDisplaySize(W, H).setAlpha(0.55);
     this.add.rectangle(W / 2, H / 2, W, H, 0x05060a, this.ending.win ? 0.5 : 0.66);
 
-    if (this.ending.win) {
-      this.sound.stopByKey('bgm-game');
+    // stop dulu semua BGM yang mungkin masih jalan, biar tidak numpuk
+    this.sound.stopByKey('bgm-game');
+    this.sound.stopByKey('bgm-good');
+
+    if (this.ending.secret) {
+      this.sound.play('secret-bgm', { loop: true, volume: 0.4 });
+    } else if (this.ending.win) {
       this.sound.play('bgm-good', { loop: true, volume: 0.4 });
     } else {
       const bgm = this.sound.get('bgm-game');
@@ -30,8 +35,8 @@ export default class EndScene extends Phaser.Scene {
     const recap = e.decisions.map((d) => {
       const v = this.story.visitorsById[d.id];
       const verdictWord = d.verdict === 'accept' ? t('end.verdict.accept') : t('end.verdict.reject');
-      const condWord    = d.health === 'cacar' ? t('end.cond.infected') : t('end.cond.safe');
-      const condCls     = d.health === 'cacar' ? 'cond-terinfeksi' : 'cond-sehat';
+      const condWord = d.health === 'cacar' ? t('end.cond.infected') : t('end.cond.safe');
+      const condCls = d.health === 'cacar' ? 'cond-terinfeksi' : 'cond-sehat';
       return `<div class="recap-row ${d.correct ? 'ok' : 'bad'}">
         <div class="recap-av" style="--c:${v ? v.color : '#888'}">${d.name[0]}</div>
         <div class="recap-info"><div class="recap-name">${d.name}</div>
@@ -61,6 +66,7 @@ export default class EndScene extends Phaser.Scene {
     document.getElementById('end-restart').onclick = () => {
       this.sound.stopByKey('bgm-game');
       this.sound.stopByKey('bgm-good');
+      this.sound.stopByKey('secret-bgm');
       root.innerHTML = ''; root.style.pointerEvents = 'none';
       this.cameras.main.fadeOut(400);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MenuScene'));

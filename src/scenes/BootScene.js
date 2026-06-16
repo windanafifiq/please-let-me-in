@@ -64,6 +64,7 @@ export default class BootScene extends Phaser.Scene {
     loadAudioOnce('bgm-game', ['assets/music/bg-2.ogg', 'assets/music/bg-2.mp3', 'assets/music/bg-2.wav']);
     loadAudioOnce('bgm-good', ['assets/music/bg-good.ogg', 'assets/music/bg-good.mp3', 'assets/music/bg-good.wav']);
     loadAudioOnce('sfx-title-voice', ['assets/music/title-sfx.ogg', 'assets/music/title-sfx.mp3', 'assets/music/title-sfx.wav']);
+    loadAudioOnce('secret-bgm', ['assets/music/secret-bg.ogg', 'assets/music/secret-bg.mp3']);
 
     this.load.on('loaderror', (file) => {
       this._failed = this._failed || new Set();
