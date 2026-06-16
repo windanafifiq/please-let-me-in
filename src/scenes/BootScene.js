@@ -33,32 +33,37 @@ export default class BootScene extends Phaser.Scene {
     }).setOrigin(0.5);
     this.load.on('progress', (p) => { bar.width = 4 + 316 * p; });
 
-    this.load.image('bg-plain', 'assets/bg/door.png');
-    this.load.image('bg-horror', 'assets/bg/door2.png');
+    this.load.image('bg-plain', 'assets/bg/door.webp');
+    this.load.image('bg-horror', 'assets/bg/door2.webp');
 
-    // Coba muat foto asli per TAHAP (silently ignored bila tidak ada).
-    //   assets/portraits/v01_full.png, v01_nomask.png, v01_arm.png, v01_open.png
     this._stages = {};
     for (const v of VISITORS) {
       const stages = stagesFor(v);
       this._stages[v.id] = stages;
       for (const s of stages) {
         const key = `photo-${v.id}-${s}`;
-        this.load.image(key, `assets/portraits/${v.id}_${s}.png`);
+        this.load.image(key, `assets/portraits/${v.id}_${s}.webp`);
       }
     }
     // Latar pintu opsional
-    this.load.image('photo-door', 'assets/bg/susun.png');
+    this.load.image('photo-door', 'assets/bg/susun.webp');
     // Foto kredit (opsional)
     this.load.image('credit-maker1', 'assets/credits/maker1.png');
     this.load.image('credit-maker2', 'assets/credits/maker2.png');
     this.load.image('credit-lecturer', 'assets/credits/lecturer.png');
-    this.load.audio('sfx-click', 'assets/music/click-sfx.wav');
-    this.load.audio('sfx-thunder', 'assets/music/thunder-sfx.wav'); // Suara petir
-    this.load.audio('bgm-main', 'assets/music/bg-1.wav');             // Music Latar Menu
-    this.load.audio('bgm-game', 'assets/music/bg-2.wav');             // Music Latar Game & Intro
-    this.load.audio('bgm-good', 'assets/music/bg-good.wav');           // Music Perfect Ending
-    this.load.audio('sfx-title-voice', 'assets/music/title-sfx.wav'); // Placeholder suara judul
+
+    // ── Audio: guard agar tidak ada key yang di-register dua kali ──
+    // sfx-click sudah di-load di WarningScene; loadAudioOnce membuatnya aman
+    // walau dipanggil lagi di sini, dan melindungi semua key lain juga.
+    const loadAudioOnce = (key, urls) => {
+      if (!this.cache.audio.exists(key)) this.load.audio(key, urls);
+    };
+    loadAudioOnce('sfx-click', ['assets/music/click-sfx.ogg', 'assets/music/click-sfx.mp3', 'assets/music/click-sfx.wav']);
+    loadAudioOnce('sfx-thunder', ['assets/music/thunder-sfx.ogg', 'assets/music/thunder-sfx.mp3', 'assets/music/thunder-sfx.wav']);
+    loadAudioOnce('bgm-main', ['assets/music/bg-1.ogg', 'assets/music/bg-1.mp3', 'assets/music/bg-1.wav']);
+    loadAudioOnce('bgm-game', ['assets/music/bg-2.ogg', 'assets/music/bg-2.mp3', 'assets/music/bg-2.wav']);
+    loadAudioOnce('bgm-good', ['assets/music/bg-good.ogg', 'assets/music/bg-good.mp3', 'assets/music/bg-good.wav']);
+    loadAudioOnce('sfx-title-voice', ['assets/music/title-sfx.ogg', 'assets/music/title-sfx.mp3', 'assets/music/title-sfx.wav']);
 
     this.load.on('loaderror', (file) => {
       this._failed = this._failed || new Set();
@@ -155,19 +160,20 @@ export default class BootScene extends Phaser.Scene {
       g.fillStyle(0x000000, 0.34);
       g.fillCircle(w / 2, h * 0.30, w * 0.20);
       g.fillRoundedRect(w * 0.22, h * 0.50, w * 0.56, h * 0.6, 48);
-      g.lineStyle(3, Phaser.Display.Color.GetColor(
-        Math.min(255, base.red + 50), Math.min(255, base.green + 50), Math.min(255, base.blue + 50)), 0.45);
-      g.strokeCircle(w / 2, h * 0.30, w * 0.20);
-      g.generateTexture('ph-' + v.id, w, h);
+
+      const tempKey = 'temp-ph-bg-' + v.id;
+      g.generateTexture(tempKey, w, h);
       g.destroy();
 
       const rt = this.add.renderTexture(0, 0, w, h).setVisible(false);
-      const img = this.add.image(0, 0, 'ph-' + v.id).setOrigin(0);
+      const img = this.add.image(0, 0, tempKey).setOrigin(0);
       const letter = this.add.text(w / 2, h * 0.30, (v.name[0] || '?').toUpperCase(), {
         fontFamily: 'Syne, sans-serif', fontSize: '96px', color: '#ffffff', fontStyle: 'bold',
       }).setOrigin(0.5).setAlpha(0.82);
       rt.draw(img); rt.draw(letter);
       rt.saveTexture('ph-' + v.id);
+
+      this.textures.remove(tempKey);
       img.destroy(); letter.destroy(); rt.destroy();
     }
   }

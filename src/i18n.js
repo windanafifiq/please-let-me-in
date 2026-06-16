@@ -341,6 +341,9 @@ const DICT = {
     'intro.p3.9': { id: 'Selama beberapa hari ke depan, setiap orang yang mengetuk pintumu harus diperiksa.', en: 'Over the next few days, every person who knocks at your door must be examined.' },
     'intro.p3.10': { id: 'Satu keputusan yang salah.', en: 'One wrong decision.' },
     'intro.p3.11': { id: 'Satu gedung yang mati.', en: 'One dead building.' },
+    'intro.next': { id: 'LANJUT', en: 'NEXT' },
+    'intro.start': { id: 'MULAI PENJAGAAN', en: 'START SHIFT' },
+    'intro.skipHint': { id: 'Klik untuk lewati animasi', en: 'Click to skip animation' },
 };
 
 // ─── State ───────────────────────────────────────────────────────────────────

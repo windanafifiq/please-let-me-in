@@ -32,12 +32,30 @@ window.__GAME__ = new Phaser.Game(config);
 // Global Helper untuk SFX Klik
 window.playClickSFX = () => {
   if (!window.__GAME__ || !window.__GAME__.sound) return;
+
+  const sm = window.__GAME__.sound;
+  if (sm.context && sm.context.state === 'suspended') {
+    sm.context.resume();
+  }
   
-  // Pastikan audio ada di cache sebelum diputar
   if (window.__GAME__.cache.audio.exists('sfx-click')) {
-    window.__GAME__.sound.play('sfx-click', { volume: 0.5 });
+    // Volume stabil 0.6 tanpa variasi nada agar suara tetap bulat/utuh
+    sm.play('sfx-click', { volume: 0.6 });
   }
 };
+
+// Pancingan Audio: Paksa bangunkan AudioContext pada klik pertama di layar
+const unlockAudio = () => {
+  if (window.__GAME__ && window.__GAME__.sound && window.__GAME__.sound.context) {
+    if (window.__GAME__.sound.context.state === 'suspended') {
+      window.__GAME__.sound.context.resume();
+    }
+    document.removeEventListener('click', unlockAudio);
+    document.removeEventListener('touchstart', unlockAudio);
+  }
+};
+document.addEventListener('click', unlockAudio);
+document.addEventListener('touchstart', unlockAudio);
 
 
 // Global DOM Click Listener (untuk tombol di UI-root)

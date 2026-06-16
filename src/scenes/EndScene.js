@@ -59,7 +59,8 @@ export default class EndScene extends Phaser.Scene {
       </div>`;
 
     document.getElementById('end-restart').onclick = () => {
-      this.sound.stopAll();
+      this.sound.stopByKey('bgm-game');
+      this.sound.stopByKey('bgm-good');
       root.innerHTML = ''; root.style.pointerEvents = 'none';
       this.cameras.main.fadeOut(400);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MenuScene'));

@@ -3,6 +3,14 @@ import { t } from '../i18n.js';
 
 export default class RotateScene extends Phaser.Scene {
   constructor() { super('RotateScene'); }
+ 
+  preload() {
+    this.load.audio('sfx-click', [
+      'assets/music/click-sfx.ogg',
+      'assets/music/click-sfx.mp3',
+      'assets/music/click-sfx.wav'
+    ]);
+  }
 
   create() {
     const W = this.scale.width, H = this.scale.height;

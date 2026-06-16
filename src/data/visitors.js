@@ -182,12 +182,6 @@ export const VISITORS = [
         gatedBy: null
       },
 
-      suhu: {
-        value: '37.6°C',
-        note: '"Mungkin karena saya jalan kaki dari halte, Nak."',
-        gatedBy: null
-      },
-
       mata: {
         value: 'Mata normal dan tidak merah.',
         note: null,

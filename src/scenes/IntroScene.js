@@ -1,4 +1,4 @@
-// IntroScene.js — cerita pembuka (konten narasi tetap ID, tombol bilingual).
+// IntroScene.js — cerita pembuka ala "dokumen" Resident Evil (geser horizontal, tanpa animasi reveal).
 import { t } from '../i18n.js';
 
 export default class IntroScene extends Phaser.Scene {
@@ -41,99 +41,64 @@ export default class IntroScene extends Phaser.Scene {
     const root = document.getElementById('ui-root');
     root.style.pointerEvents = 'auto';
 
+    // semua teks langsung dirender penuh, tanpa reveal
+    const renderPageContent = (page, idx) => page.map((line, i) =>
+      `<p class="intro-p${i === 0 ? ' intro-stamp' : ''}">${line}</p>`
+    ).join('');
+
     root.innerHTML = `
       <div class="intro-screen" id="intro-screen">
-        <div class="intro-body" id="intro-body"></div>
-        <button id="intro-next" class="intro-btn">${t('intro.next')}</button>
-        <div class="intro-skip-hint" id="intro-skip-hint">${t('intro.skipHint') || 'Klik untuk lewati animasi'}</div>
+        <button id="intro-prev" class="intro-nav intro-nav-prev" aria-label="Sebelumnya">‹</button>
+
+        <div class="intro-viewport" id="intro-viewport">
+          <div class="intro-track" id="intro-track">
+            ${pages.map((page, idx) => `
+              <section class="intro-page" data-page="${idx}">
+                <div class="intro-page-inner">${renderPageContent(page, idx)}</div>
+                <div class="intro-page-num">${idx + 1} / ${pages.length}</div>
+              </section>
+            `).join('')}
+          </div>
+        </div>
+
+        <button id="intro-next" class="intro-nav intro-nav-next" aria-label="Berikutnya">›</button>
+
+        <button id="intro-start" class="intro-btn intro-start">${t('intro.start')}</button>
       </div>
     `;
 
-    const screen = document.getElementById('intro-screen');
-    const body = document.getElementById('intro-body');
+    const track   = document.getElementById('intro-track');
+    const prevBtn = document.getElementById('intro-prev');
     const nextBtn = document.getElementById('intro-next');
-    const skipHint = document.getElementById('intro-skip-hint');
+    const startBtn = document.getElementById('intro-start');
     let currentPage = 0;
+    const lastPage = pages.length - 1;
 
-    // ── state animasi ──────────────────────────────
-    this._revealing = false;       // true selama teks lagi muncul satu-satu
-    this._pendingTimer = null;     // simpan delayedCall biar bisa dibatalkan
-
-    const renderPage = () => {
-      body.innerHTML = '';
-      this._revealing = true;
-      if (skipHint) skipHint.style.opacity = '1';
-      let i = 0;
-
-      const showNext = () => {
-        if (i >= pages[currentPage].length) {
-          this._revealing = false;
-          if (skipHint) skipHint.style.opacity = '0';
-          return;
-        }
-        const p = document.createElement('p');
-        p.className = 'intro-p' + (i === 0 ? ' intro-stamp' : '');
-        p.textContent = pages[currentPage][i];
-        body.appendChild(p);
-        setTimeout(() => {
-          p.classList.add('show');
-          p.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }, 50);
-        i++;
-        if (i < pages[currentPage].length) {
-          this._pendingTimer = this.time.delayedCall(850, showNext);
-        } else {
-          this._revealing = false;
-          if (skipHint) skipHint.style.opacity = '0';
-        }
-      };
-      showNext();
-
-      nextBtn.textContent = currentPage === pages.length - 1
-        ? t('intro.start')
-        : t('intro.next');
+    const update = () => {
+      track.style.transform = `translateX(-${currentPage * 100}%)`;
+      // panah kiri disembunyikan di halaman pertama, panah kanan di halaman terakhir
+      prevBtn.classList.toggle('hidden', currentPage === 0);
+      nextBtn.classList.toggle('hidden', currentPage === lastPage);
+      // tombol mulai cuma di halaman terakhir
+      startBtn.classList.toggle('visible', currentPage === lastPage);
     };
 
-    // ── SKIP: tampilkan semua teks halaman ini sekaligus ──
-    const skipReveal = () => {
-      if (!this._revealing) return;
-      if (this._pendingTimer) { this._pendingTimer.remove(false); this._pendingTimer = null; }
-      // render ulang seluruh halaman langsung tampil penuh
-      body.innerHTML = '';
-      for (let j = 0; j < pages[currentPage].length; j++) {
-        const p = document.createElement('p');
-        p.className = 'intro-p show' + (j === 0 ? ' intro-stamp' : '');
-        p.textContent = pages[currentPage][j];
-        body.appendChild(p);
-      }
-      body.lastChild?.scrollIntoView({ behavior: 'auto', block: 'end' });
-      this._revealing = false;
-      if (skipHint) skipHint.style.opacity = '0';
+    prevBtn.onclick = () => { if (currentPage > 0) { currentPage--; update(); } };
+    nextBtn.onclick = () => { if (currentPage < lastPage) { currentPage++; update(); } };
+
+    startBtn.onclick = () => {
+      root.innerHTML = '';
+      root.style.pointerEvents = 'none';
+      this.cameras.main.fadeOut(420, 5, 6, 10);
+      this.cameras.main.once('camerafadeoutcomplete', () => {
+        this.scene.start('GameScene', { newGame: true, playerName: name });
+      });
     };
 
-    // klik area kosong (bukan tombol) → skip animasi
-    screen.addEventListener('click', (e) => {
-      if (e.target === nextBtn) return;   // tombol Next biar jalan normal
-      skipReveal();
-    });
+    // (opsional) navigasi keyboard ←/→
+    this.input.keyboard.on('keydown-LEFT',  () => prevBtn.onclick());
+    this.input.keyboard.on('keydown-RIGHT', () => nextBtn.onclick());
 
-    renderPage();
-
-    nextBtn.onclick = () => {
-      // kalau masih animasi, klik Next pertama = skip dulu, bukan langsung pindah
-      if (this._revealing) { skipReveal(); return; }
-
-      currentPage++;
-      if (currentPage >= pages.length) {
-        root.innerHTML = '';
-        root.style.pointerEvents = 'none';
-        this.cameras.main.fadeOut(420, 5, 6, 10);
-        this.cameras.main.once('camerafadeoutcomplete', () => {
-          this.scene.start('GameScene', { newGame: true, playerName: name });
-        });
-        return;
-      }
-      renderPage();
-    };
+    update();
   }
 }
