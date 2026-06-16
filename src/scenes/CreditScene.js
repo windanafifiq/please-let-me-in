@@ -1,3 +1,6 @@
+// CreditScene.js — bilingual
+import { t } from '../i18n.js';
+
 export default class CreditScene extends Phaser.Scene {
   constructor() { super('CreditScene'); }
 
@@ -5,7 +8,6 @@ export default class CreditScene extends Phaser.Scene {
     const W = this.scale.width, H = this.scale.height;
     this.cameras.main.fadeIn(360);
 
-    // Pastikan BGM tetap jalan
     const bgm = this.sound.get('bgm-main');
     if (bgm && !bgm.isPlaying) bgm.play();
 
@@ -13,12 +15,16 @@ export default class CreditScene extends Phaser.Scene {
     this.add.rectangle(W / 2, H / 2, W, H, 0x05060a, 0.55);
 
     const makers = [
-      { role: 'Anggota 1', name: 'Winda Nafiqih Irawan', nrp: 'NRP 5025231065', email: 'windaforkwork@gmail.com', photo: 'credit-maker1' },
-      { role: 'Anggota 2', name: 'Miskiyah', nrp: 'NRP 5025231119', email: 'ayamiskiyah46@gmail.com', photo: 'credit-maker2' },
+      { role: t('credit.role1'), name: 'Winda Nafiqih Irawan', nrp: 'NRP 5025231065', email: 'windaforkwork@gmail.com', photo: 'credit-maker1' },
+      { role: t('credit.role2'), name: 'Miskiyah', nrp: 'NRP 5025231119', email: 'ayamiskiyah46@gmail.com', photo: 'credit-maker2' },
     ];
-    const lecturer = { role: 'Dosen Pengampu Mata Kuliah Game Simulasi dan Edukasi', name: 'Imam Kuswardayan, S.Kom., MT.', email: 'imam@its.ac.id', photo: 'credit-lecturer' };
+    const lecturer = {
+      role: t('credit.roleLec'),
+      name: 'Imam Kuswardayan, S.Kom., MT.',
+      email: 'imam@its.ac.id',
+      photo: 'credit-lecturer',
+    };
 
-    const reg = this.registry.get('photoRegistry') || {};
     const photoUrl = (key) => this.textures.exists(key) ? this.textures.getBase64(key) : null;
 
     const card = (p, showNrp) => {
@@ -40,15 +46,16 @@ export default class CreditScene extends Phaser.Scene {
     root.style.pointerEvents = 'auto';
     root.innerHTML = `
       <div class="credit-screen">
-        <div class="credit-head">KREDIT</div>
-        <div class="credit-task">Tugas Final Project Mata Kuliah<br><b>Game Edukasi dan Simulasi</b><br>Teknik Informatika ITS 2026</div>
+        <div class="credit-head">${t('credit.head')}</div>
+        <div class="credit-task">${t('credit.task')}</div>
         <div class="credit-grid">
           ${card(makers[0], true)}
           ${card(makers[1], true)}
           ${card(lecturer, false)}
         </div>
-        <button id="credit-back" class="credit-btn">◂ KEMBALI</button>
+        <button id="credit-back" class="credit-btn">${t('credit.back')}</button>
       </div>`;
+
     document.getElementById('credit-back').onclick = () => {
       root.innerHTML = ''; root.style.pointerEvents = 'none';
       this.cameras.main.fadeOut(320);

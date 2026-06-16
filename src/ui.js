@@ -1,16 +1,21 @@
-// ui.js — Tampilan sistem PEMERIKSAAN GEJALA (pivot dari wawancara).
-// Layout: HUD atas · panggung (karakter tengah + log pemeriksaan kanan) ·
-// menu pemeriksaan + tombol penghalang + keputusan di bawah.
-//
-// Tidak ada warna penilaian di log — pemain membaca data mentah & menyimpulkan.
-// Gambar karakter berganti antara state "tertutup" dan "terbuka" (AksesFSM).
-
+// ui.js — Tampilan sistem PEMERIKSAAN GEJALA (bilingual via i18n)
 import { VERDICT } from './engine/inspection.js';
 import { EXAM_TYPES } from './data/visitors.js';
+import { t } from './i18n.js';
 
 const EXAM_ICONS = {
   observasi: '🔎', suhu: '🌡', ruam: '🩹', mata: '👁', tekanan: '🩸', rambut: '💈',
 };
+
+// Label exam per key — dibaca dari i18n saat dibutuhkan
+const EXAM_LABEL = (id) => ({
+  observasi: t('ui.exam.observe.label'),
+  suhu: t('ui.exam.suhu.label'),
+  ruam: t('ui.exam.ruam.label'),
+  mata: t('ui.exam.mata.label'),
+  tekanan: t('ui.exam.tekanan.label'),    
+  rambut: t('ui.exam.rambut.label'),
+}[id] || id);
 
 export const UI = {
   scene: null,
@@ -21,9 +26,9 @@ export const UI = {
     root.style.pointerEvents = 'auto';
     root.innerHTML = `
       <div class="hud">
-        <div class="hud-day">PENGUNJUNG <b id="hud-idx">1</b></div>
+        <div class="hud-day">${t('ui.hud.visitor')} <b id="hud-idx">1</b></div>
         <div class="hud-fsms">
-          <div class="hud-stat" id="hud-checked" title="Pemeriksaan dilakukan"><span>🔬</span><b>0</b></div>
+          <div class="hud-stat" id="hud-checked" title="${t('ui.exam.head')}"><span>🔬</span><b>0</b></div>
         </div>
       </div>
 
@@ -34,7 +39,7 @@ export const UI = {
         </div>
 
         <aside class="clue-board">
-          <div class="clue-board-title">CATATAN PEMERIKSAAN</div>
+          <div class="clue-board-title">${t('ui.clue.title')}</div>
           <div class="clue-list" id="clue-list"></div>
         </aside>
       </div>
@@ -46,13 +51,19 @@ export const UI = {
 
       <div class="vn-bottom">
         <div class="action-panel">
-          <div class="action-head">PEMERIKSAAN</div>
+          <div class="action-head">${t('ui.exam.head')}</div>
           <div class="action-grid" id="action-grid"></div>
         </div>
         <div class="barrier-row" id="barrier-row"></div>
         <div class="verdict-bar" id="verdict-bar">
-          <button class="verdict-btn reject" id="btn-reject"><span class="vb-ico">✕</span> TOLAK<small>jangan biarkan masuk</small></button>
-          <button class="verdict-btn accept" id="btn-accept"><span class="vb-ico">✓</span> TERIMA<small>buka pintu</small></button>
+          <button class="verdict-btn reject" id="btn-reject">
+            <span class="vb-ico">✕</span> ${t('ui.verdict.reject.main')}
+            <small>${t('ui.verdict.reject.sub')}</small>
+          </button>
+          <button class="verdict-btn accept" id="btn-accept">
+            <span class="vb-ico">✓</span> ${t('ui.verdict.accept.main')}
+            <small>${t('ui.verdict.accept.sub')}</small>
+          </button>
         </div>
       </div>
 
@@ -64,14 +75,12 @@ export const UI = {
   },
 
   // ---- Gambar karakter per TAHAP keterbukaan ----
-  // photoRegistry[visitorId] = { full, nomask, arm, open, ... } sesuai tahap.
   charTexture(scene, stage) {
     const insp = scene.inspection;
     const v = insp.visitor;
     const reg = scene.registry.get('photoRegistry') || {};
     const set = reg[v.id] || {};
     if (set[stage]) return { type: 'photo', key: set[stage] };
-    // fallback berjenjang: open → full → placeholder
     if (set.open) return { type: 'photo', key: set.open };
     if (set.full) return { type: 'photo', key: set.full };
     return { type: 'placeholder', color: v.color, letter: v.name[0] };
@@ -101,11 +110,16 @@ export const UI = {
   },
 
   showVisitor(scene, v) {
+    const floorLabel = v.floor
+      ? `${t('ui.visitor.floor')} ${v.floor}`
+      : t('ui.visitor.unknown');
+    const ageLabel = v.age ? ` · ${v.age} ${t('ui.visitor.age')}` : '';
+
+    const name = t(`${v.id}.name`) || v.name;
     document.getElementById('vn-nameplate').innerHTML =
-      `<b>${v.name}</b><span>${v.floor ? 'Lantai ' + v.floor : 'Tak dikenal'}${v.age ? ' · ' + v.age + ' th' : ''}</span>`;
-    document.getElementById('speech-who').textContent = v.name;
-    // perkenalan: intro + claim
-    document.getElementById('speech-text').textContent = `${v.intro} ${v.claim}`;
+      `<b>${name}</b><span>${floorLabel}${ageLabel}</span>`;
+    document.getElementById('speech-who').textContent = name;
+    document.getElementById('speech-text').textContent = `${t(`${v.id}.intro`)} ${t(`${v.id}.claim`)}`;
     document.getElementById('speech-text').classList.add('narr');
     this.buildLog(scene);
     this.renderChar(scene);
@@ -113,44 +127,58 @@ export const UI = {
     this.renderBarriers(scene);
   },
 
-  // ---- Log pemeriksaan: mulai dari daftar exam yang "belum diperiksa" ----
+  // ---- Log pemeriksaan ----
   buildLog(scene) {
     const insp = scene.inspection;
     const list = document.getElementById('clue-list');
     const ids = Object.keys(insp.exams);
     list.innerHTML = ids.map((id) => {
       const ex = insp.exams[id];
+      const label = EXAM_LABEL(id) || ex.label;
       return `
         <div class="clue pending" data-exam="${id}">
           <div class="clue-check"></div>
           <div class="clue-body">
             <div class="clue-top">
-              <span class="clue-probe">${ex.label}</span>
+              <span class="clue-probe">${label}</span>
               <span class="clue-sig">—</span>
             </div>
-            <div class="clue-text">Belum diperiksa.</div>
+            <div class="clue-text">${t('ui.clue.pending')}</div>
           </div>
         </div>`;
     }).join('');
   },
 
-  // Isi satu baris log saat exam dilakukan. TANPA warna penilaian.
-  fillLog(examId, entry) {
+  fillLog(scene, examId, entry) {
     const list = document.getElementById('clue-list');
     const row = list.querySelector(`[data-exam="${examId}"]`);
-    if (!row) return;
+    if (!row) {
+      console.warn('[fillLog] row tidak ditemukan untuk', examId);
+      return;
+    }
+
+    const label = EXAM_LABEL(examId) || entry.label || examId;
+    const keyBase = `${scene.inspection.visitor.id}.exam.${examId}`;
+    const tVal = t(keyBase);
+    const tNote = t(`${keyBase}.n`);
+
+    const finalVal = (tVal !== keyBase) ? tVal : (entry.value || '');
+    const finalNote = (tNote !== `${keyBase}.n`) ? tNote : (entry.note || null);
+
+    const noteHtml = finalNote
+      ? `<div class="clue-text">${finalVal}</div><div class="clue-note">${finalNote}</div>`
+      : `<div class="clue-text">${finalVal}</div>`;
+
     row.className = 'clue done';
-    row.querySelector('.clue-check').textContent = '✓';
-    row.querySelector('.clue-sig').textContent = 'DICATAT';
-    // tampilkan data mentah + catatan medis netral
-    const noteHtml = entry.note
-      ? `<div class="clue-text">${entry.value}</div><div class="clue-note">${entry.note}</div>`
-      : `<div class="clue-text">${entry.value}</div>`;
-    row.querySelector('.clue-body').innerHTML = `
-      <div class="clue-top">
-        <span class="clue-probe">${entry.label}</span>
-        <span class="clue-sig">DICATAT</span>
-      </div>${noteHtml}`;
+    row.innerHTML = `
+      <div class="clue-check">✓</div>
+      <div class="clue-body">
+        <div class="clue-top">
+          <span class="clue-probe">${label}</span>
+          <span class="clue-sig">${t('ui.clue.done')}</span>
+        </div>
+        ${noteHtml}
+      </div>`;
   },
 
   // ---- Menu pemeriksaan ----
@@ -164,10 +192,11 @@ export const UI = {
       const ex = insp.exams[id];
       const done = ex.isDone();
       const locked = insp.isExamLocked(id);
+      const label = EXAM_LABEL(id) || ex.label;
       return `<button class="action-btn ${done ? 'used' : ''} ${locked ? 'gated' : ''}"
-        data-exam="${id}" title="${locked ? 'Buka penghalang dulu' : ''}">
+        data-exam="${id}" title="${locked ? t('ui.toast.locked') : ''}">
         <span class="ab-ico">${EXAM_ICONS[id] || '🔬'}</span>
-        <span class="ab-label">${ex.label}</span>
+        <span class="ab-label">${label}</span>
         ${done ? '<span class="ab-done">✓</span>' : ''}
         ${locked ? '<span class="ab-lock">🔒</span>' : ''}</button>`;
     }).join('');
@@ -177,48 +206,70 @@ export const UI = {
     });
   },
 
-  // ---- Tombol penghalang (minta buka) ----
+  // ---- Tombol penghalang ----
   renderBarriers(scene) {
     const insp = scene.inspection;
     const row = document.getElementById('barrier-row');
     if (!insp) { row.innerHTML = ''; return; }
     const closed = insp.closedBarriers();
     if (closed.length === 0) { row.innerHTML = ''; return; }
-    row.innerHTML = `<div class="barrier-label">Minta buka:</div>` +
-      closed.map((b) => `<button class="barrier-btn" data-bar="${b.id}">🧥 ${b.label}</button>`).join('');
+    row.innerHTML = `<div class="barrier-label">${t('ui.barrier.ask')}</div>` +
+      closed.map((b) => {
+        const transLabel = t(`${insp.visitor.id}.${b.id}`);
+        const label = (transLabel !== `${insp.visitor.id}.${b.id}`) ? transLabel : b.label;
+        return `<button class="barrier-btn" data-bar="${b.id}">🧥 ${label}</button>`;
+      }).join('');
     row.querySelectorAll('.barrier-btn').forEach((btn) => {
       btn.onclick = () => scene.doOpenBarrier(btn.dataset.bar);
     });
   },
 
-  // ---- Dipanggil GameScene saat exam dilakukan ----
+  // ---- Exam result ----
   showExam(scene, examId, result) {
     if (result.locked) {
-      this.toast(`Buka "${result.gate.label}" dulu untuk memeriksa ${result.examLabel}.`);
+      const bId = result.gate.id;
+      const vId = scene.inspection.visitor.id;
+      const transB = t(`${vId}.${bId}`);
+      const bLabel = (transB !== `${vId}.${bId}`) ? transB : result.gate.label;
+      this.toast(`${t('ui.toast.locked')} "${bLabel}" ${t('ui.toast.locked2')} ${result.examLabel}.`);
       return;
     }
-    this.fillLog(examId, result.entry);
-    // tampilkan hasil di speech bubble juga
+
+    this.fillLog(scene, examId, result.entry);
+
     const txt = document.getElementById('speech-text');
     const who = document.getElementById('speech-who');
-    who.textContent = '— ' + result.entry.label + ' —';
+    const label = EXAM_LABEL(examId) || result.entry.label || examId;
+    who.textContent = '— ' + label + ' —';
     txt.classList.add('narr');
-    this.typewriter(txt, result.entry.value + (result.entry.note ? '  (' + result.entry.note + ')' : ''));
+
+    const keyBase = `${scene.inspection.visitor.id}.exam.${examId}`;
+    const tVal = t(keyBase);
+    const tNote = t(`${keyBase}.n`);
+    const val = (tVal !== keyBase) ? tVal : (result.entry.value || '');
+    const note = (tNote !== `${keyBase}.n`) ? tNote : (result.entry.note || null);
+
+    this.typewriter(txt, val + (note ? '  (' + note + ')' : ''));
     this.renderActions(scene);
     this.updateChecked(scene);
   },
 
-  // ---- Dipanggil GameScene saat penghalang dibuka ----
-  showBarrierOpened(scene, label) {
-    this.toast(`${label} dibuka. Periksa gejala di baliknya.`);
+  showBarrierOpened(scene, barrierId) {
+    const vId = scene.inspection.visitor.id;
+    const transB = t(`${vId}.${barrierId}`);
+    // Jika tidak ada di i18n, pakai label default dari engine (asumsi dikirim di argumen sebelumnya)
+    // Tapi di GameScene.js dilempar r.label. Kita lebih baik cari dari ID saja.
+    const label = (transB !== `${vId}.${barrierId}`) ? transB : barrierId;
+
+    this.toast(`${label} ${t('ui.toast.barrier')}`);
     const txt = document.getElementById('speech-text');
     const who = document.getElementById('speech-who');
-    who.textContent = '— Pengamatan —';
+    who.textContent = t('ui.narr.observe');
     txt.classList.add('narr');
-    this.typewriter(txt, `${label} dibuka. Pemeriksaan baru kini tersedia.`);
-    this.renderChar(scene);       // mungkin ganti ke gambar "terbuka"
-    this.renderActions(scene);    // exam yang tadi terkunci kini aktif
-    this.renderBarriers(scene);   // hapus tombol penghalang yang sudah dibuka
+    this.typewriter(txt, `${label} ${t('ui.narr.barrier')}`);
+    this.renderChar(scene);
+    this.renderActions(scene);
+    this.renderBarriers(scene);
   },
 
   updateChecked(scene) {
@@ -252,8 +303,8 @@ export const UI = {
     ov.innerHTML = `
       <div class="flash-card ${accepted ? 'fl-accept' : 'fl-reject'}">
         <div class="flash-ico">${accepted ? '🔓' : '🔒'}</div>
-        <div class="flash-word">${accepted ? 'PINTU DIBUKA' : 'PINTU DITUTUP'}</div>
-        <div class="flash-sub">${accepted ? 'Kau membiarkannya masuk.' : 'Kau menyuruhnya pergi.'}</div>
+        <div class="flash-word">${accepted ? t('ui.flash.accept.word') : t('ui.flash.reject.word')}</div>
+        <div class="flash-sub">${accepted ? t('ui.flash.accept.sub') : t('ui.flash.reject.sub')}</div>
       </div>`;
     const go = () => { ov.className = 'overlay'; ov.innerHTML = ''; clearTimeout(this._flashT); onContinue(); };
     ov.onclick = go;
@@ -261,9 +312,9 @@ export const UI = {
   },
 
   toast(msg) {
-    const t = document.getElementById('toast'); if (!t) return;
-    t.textContent = msg; t.classList.add('show');
-    clearTimeout(this._tt); this._tt = setTimeout(() => t.classList.remove('show'), 2400);
+    const t2 = document.getElementById('toast'); if (!t2) return;
+    t2.textContent = msg; t2.classList.add('show');
+    clearTimeout(this._tt); this._tt = setTimeout(() => t2.classList.remove('show'), 2400);
   },
 
   unmount() {

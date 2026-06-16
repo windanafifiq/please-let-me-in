@@ -1,4 +1,6 @@
 // TutorialScene.js — "Cara Bermain" untuk sistem pemeriksaan gejala.
+import { t } from '../i18n.js';
+
 export default class TutorialScene extends Phaser.Scene {
   constructor() { super('TutorialScene'); }
 
@@ -6,7 +8,6 @@ export default class TutorialScene extends Phaser.Scene {
     const W = this.scale.width, H = this.scale.height;
     this.cameras.main.fadeIn(300);
 
-    // Pastikan BGM tetap jalan
     const bgm = this.sound.get('bgm-main');
     if (bgm && !bgm.isPlaying) bgm.play();
 
@@ -25,59 +26,51 @@ export default class TutorialScene extends Phaser.Scene {
     root.style.pointerEvents = 'auto';
     root.innerHTML = `
       <div class="tut-screen">
-        <div class="tut-head">CARA BERMAIN</div>
+        <div class="tut-head">${t('tut.head')}</div>
         <div class="tut-scroll">
 
           <section class="tut-sec">
-            <h3>🎯 Tujuanmu</h3>
-            <p>Kau petugas pemeriksa di pintu gedung karantina. Tiap pengunjung ingin masuk.
-            Tugasmu: <b>periksa gejala mereka, lalu putuskan TERIMA atau TOLAK.</b>
-            Meloloskan satu orang yang terinfeksi VRS-24 berarti wabah masuk ke gedung.</p>
+            <h3>${t('tut.goal.h')}</h3>
+            <p>${t('tut.goal.p')}</p>
           </section>
 
           <section class="tut-sec">
-            <h3>🔬 Cara memeriksa</h3>
-            <p>Gunakan menu <b>PEMERIKSAAN</b>: observasi penampilan, cek suhu, cek tekanan
-            darah, periksa ruam, mata, dan rambut. Tiap hasil dicatat otomatis di
-            <b>CATATAN PEMERIKSAAN</b> sebagai data apa adanya — <b>kau sendiri yang menyimpulkan</b>.</p>
+            <h3>${t('tut.how.h')}</h3>
+            <p>${t('tut.how.p')}</p>
           </section>
 
           <section class="tut-sec">
-            <h3>🧥 Penghalang</h3>
-            <p>Sebagian gejala tersembunyi di balik pakaian (jaket, syal, kacamata, topi, masker).
-            Gunakan tombol <b>"Minta buka"</b> untuk memintanya dibuka, lalu gejala di baliknya
-            bisa diperiksa. Curigai penghalang yang janggal — kenapa pakai syal di malam gerah?</p>
+            <h3>${t('tut.barrier.h')}</h3>
+            <p>${t('tut.barrier.p')}</p>
           </section>
 
           <section class="tut-sec tut-tip">
-            <h3>🦠 Mengenali VRS-24 (Varion Rapid Syndrom 24)</h3>
-            <p>Seseorang <b>terinfeksi</b> bila menunjukkan POLA berikut bersamaan:</p>
+            <h3>${t('tut.vrs.h')}</h3>
+            <p>${t('tut.vrs.p')}</p>
             <div class="tut-actions">
-              <div class="tut-act"><span class="ico">🩹</span><div><b>Ruam menyebar</b><small>Bintik di BANYAK titik (lengan, leher, dada). Bukan satu-dua bintik terpisah.</small></div></div>
-              <div class="tut-act"><span class="ico">🌡</span><div><b>Demam</b><small>Suhu 37.5°C ke atas. 37.5–38°C demam ringan; di atas 38°C demam jelas.</small></div></div>
-              <div class="tut-act"><span class="ico">➕</span><div><b>Minimal 1 gejala pendukung</b><small>Mata merah berair, tekanan darah rendah, pucat, atau kebotakan.</small></div></div>
+              <div class="tut-act"><span class="ico">🩹</span><div>${t('tut.vrs.rash')}<small>${t('tut.vrs.rash.note')}</small></div></div>
+              <div class="tut-act"><span class="ico">🌡</span><div>${t('tut.vrs.fever')}<small>${t('tut.vrs.fever.note')}</small></div></div>
+              <div class="tut-act"><span class="ico">➕</span><div>${t('tut.vrs.support')}<small>${t('tut.vrs.support.note')}</small></div></div>
             </div>
-            <p style="margin-top:8px"><b>Ruam menyebar + demam + 1 pendukung = VRS-24 → TOLAK.</b></p>
+            <p style="margin-top:8px">${t('tut.vrs.rule')}</p>
           </section>
 
           <section class="tut-sec">
-            <h3>🎭 Yang MENJEBAK (sebenarnya aman)</h3>
+            <h3>${t('tut.trap.h')}</h3>
             <div class="tut-actions">
-              <div class="tut-act"><span class="ico">💧</span><div><b>Keringat & merah karena panas</b><small>Heat-stroke ringan: demam tapi TANPA ruam. Wajah merah, bukan pucat.</small></div></div>
-              <div class="tut-act"><span class="ico">🩸</span><div><b>Tekanan darah rendah sendirian</b><small>Bisa anemia — bukan VRS-24 bila tanpa ruam & demam.</small></div></div>
-              <div class="tut-act"><span class="ico">💉</span><div><b>Satu bintik</b><small>Bekas suntik imunisasi = satu titik di lengan atas. Bukan ruam menyebar.</small></div></div>
-              <div class="tut-act"><span class="ico">👴</span><div><b>Botak biasa</b><small>Umum pada lansia. Bukan gejala bila tanpa ruam & demam.</small></div></div>
+              <div class="tut-act"><span class="ico">💧</span><div>${t('tut.trap.heat')}<small>${t('tut.trap.heat.note')}</small></div></div>
+              <div class="tut-act"><span class="ico">🩸</span><div>${t('tut.trap.bp')}<small>${t('tut.trap.bp.note')}</small></div></div>
+              <div class="tut-act"><span class="ico">💉</span><div>${t('tut.trap.spot')}<small>${t('tut.trap.spot.note')}</small></div></div>
+              <div class="tut-act"><span class="ico">👴</span><div>${t('tut.trap.bald')}<small>${t('tut.trap.bald.note')}</small></div></div>
             </div>
           </section>
 
           <section class="tut-sec tut-tip">
-            <p>💡 <b>Kunci:</b> jangan tertipu satu gejala atau alasan yang masuk akal. Baca
-            <b>POLA</b>-nya. Gejala tunggal sering punya sebab lain; tapi ruam menyebar + demam
-            bersamaan adalah VRS-24 — sekalipun pengunjung punya alasan untuk tiap gejalanya.</p>
+            <p>${t('tut.tip')}</p>
           </section>
 
         </div>
-        <button class="tut-btn" id="tut-back">◂ KEMBALI</button>
+        <button class="tut-btn" id="tut-back">${t('tut.back')}</button>
       </div>
     `;
     document.getElementById('tut-back').onclick = () => this.back();

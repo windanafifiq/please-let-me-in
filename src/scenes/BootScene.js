@@ -60,7 +60,6 @@ export default class BootScene extends Phaser.Scene {
     this.load.audio('bgm-good', 'assets/music/bg-good.wav');           // Music Perfect Ending
     this.load.audio('sfx-title-voice', 'assets/music/title-sfx.wav'); // Placeholder suara judul
 
-
     this.load.on('loaderror', (file) => {
       this._failed = this._failed || new Set();
       this._failed.add(file.key);

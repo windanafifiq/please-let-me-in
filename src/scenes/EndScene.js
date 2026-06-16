@@ -1,4 +1,6 @@
-// EndScene.js — 2 ending: menang (good, dengan outro) / kalah (bad). + rekap.
+// EndScene.js — 2 ending bilingual
+import { t } from '../i18n.js';
+
 export default class EndScene extends Phaser.Scene {
   constructor() { super('EndScene'); }
   init(data) { this.ending = data.ending; this.story = data.story; }
@@ -9,8 +11,6 @@ export default class EndScene extends Phaser.Scene {
     this.add.image(W / 2, H / 2, 'bg-plain').setDisplaySize(W, H).setAlpha(0.55);
     this.add.rectangle(W / 2, H / 2, W, H, 0x05060a, this.ending.win ? 0.5 : 0.66);
 
-    // BGM bg-2 khusus untuk 3 ending selain perfect. 
-    // Jika Perfect (win), kita stop BGM game dan mainkan music kemenangan.
     if (this.ending.win) {
       this.sound.stopByKey('bgm-game');
       this.sound.play('bgm-good', { loop: true, volume: 0.4 });
@@ -29,14 +29,13 @@ export default class EndScene extends Phaser.Scene {
 
     const recap = e.decisions.map((d) => {
       const v = this.story.visitorsById[d.id];
-      const verdictWord = d.verdict === 'accept' ? 'Terima' : 'Tolak';
-      // health: 'cacar' | 'sehat' | 'kondisi_lain'
-      const condWord = d.health === 'cacar' ? 'Terinfeksi' : 'Aman';
-      const condCls = d.health === 'cacar' ? 'cond-terinfeksi' : 'cond-sehat';
+      const verdictWord = d.verdict === 'accept' ? t('end.verdict.accept') : t('end.verdict.reject');
+      const condWord    = d.health === 'cacar' ? t('end.cond.infected') : t('end.cond.safe');
+      const condCls     = d.health === 'cacar' ? 'cond-terinfeksi' : 'cond-sehat';
       return `<div class="recap-row ${d.correct ? 'ok' : 'bad'}">
         <div class="recap-av" style="--c:${v ? v.color : '#888'}">${d.name[0]}</div>
         <div class="recap-info"><div class="recap-name">${d.name}</div>
-        <div class="recap-meta">Kau <b>${verdictWord}</b> · sebenarnya <b class="${condCls}">${condWord}</b></div></div>
+        <div class="recap-meta">${t('end.meta.you')} <b>${verdictWord}</b> · ${t('end.meta.actually')} <b class="${condCls}">${condWord}</b></div></div>
         <div class="recap-judge">${d.correct ? '✓' : '✕'}</div></div>`;
     }).join('');
 
@@ -46,21 +45,21 @@ export default class EndScene extends Phaser.Scene {
 
     root.innerHTML = `
       <div class="end-screen">
-        <div class="end-badge ${e.win ? 'win' : 'lose'}">${e.win ? '✓ SELAMAT' : '✕ GAGAL'}</div>
+        <div class="end-badge ${e.win ? 'win' : 'lose'}">${e.win ? t('end.win') : t('end.lose')}</div>
         <h1 class="end-title">${e.title}</h1>
         <p class="end-summary">${e.summary}</p>
         ${outroHtml}
         <div class="end-stats">
-          <span><b>${e.correct}</b>/${e.total} penilaian benar</span>
-          <span><b>${e.leaked}</b> wabah lolos</span>
+          <span><b>${e.correct}</b>/${e.total} ${t('end.stats.correct')}</span>
+          <span><b>${e.leaked}</b> ${t('end.stats.leaked')}</span>
         </div>
-        <div class="recap-label">REKAP KEPUTUSAN</div>
+        <div class="recap-label">${t('end.recap.label')}</div>
         <div class="recap">${recap}</div>
-        <button class="end-btn" id="end-restart">KEMBALI KE MENU</button>
+        <button class="end-btn" id="end-restart">${t('end.back')}</button>
       </div>`;
 
     document.getElementById('end-restart').onclick = () => {
-      this.sound.stopAll(); // Pastikan semua music game berhenti sebelum ke menu
+      this.sound.stopAll();
       root.innerHTML = ''; root.style.pointerEvents = 'none';
       this.cameras.main.fadeOut(400);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.start('MenuScene'));

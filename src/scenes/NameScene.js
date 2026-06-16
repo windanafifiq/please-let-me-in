@@ -1,4 +1,6 @@
-// NameScene.js — input nama player (boleh kosong → default "Penjaga").
+// NameScene.js — input nama player (boleh kosong → default sesuai bahasa).
+import { t } from '../i18n.js';
+
 export default class NameScene extends Phaser.Scene {
   constructor() { super('NameScene'); }
 
@@ -12,17 +14,17 @@ export default class NameScene extends Phaser.Scene {
     root.style.pointerEvents = 'auto';
     root.innerHTML = `
       <div class="name-screen">
-        <div class="name-title">SIAPA NAMAMU, PENJAGA?</div>
-        <div class="name-sub">Nama ini akan dikenang oleh mereka yang kau selamatkan.</div>
+        <div class="name-title">${t('name.title')}</div>
+        <div class="name-sub">${t('name.sub')}</div>
         <input id="name-input" class="name-input" type="text" maxlength="18"
-          placeholder="Ketik nama (boleh dikosongkan)" autocomplete="off" />
-        <button id="name-go" class="name-btn">LANJUT ▸</button>
+          placeholder="${t('name.placeholder')}" autocomplete="off" />
+        <button id="name-go" class="name-btn">${t('name.btn')}</button>
       </div>`;
 
     const input = document.getElementById('name-input');
     setTimeout(() => input.focus(), 100);
     const go = () => {
-      const name = (input.value || '').trim() || 'Penjaga';
+      const name = (input.value || '').trim() || t('name.default');
       root.innerHTML = ''; root.style.pointerEvents = 'none';
       this.cameras.main.fadeOut(380, 5, 6, 10);
       this.cameras.main.once('camerafadeoutcomplete', () =>

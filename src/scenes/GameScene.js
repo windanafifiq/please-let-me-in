@@ -65,7 +65,7 @@ export default class GameScene extends Phaser.Scene {
   doOpenBarrier(barrierId) {
     if (!this.inspection || this.inspection.resolved) return;
     const r = this.inspection.openBarrier(barrierId);
-    if (r && r.changed) UI.showBarrierOpened(this, r.label);
+    if (r && r.changed) UI.showBarrierOpened(this, barrierId);
   }
 
   decide(verdict) {

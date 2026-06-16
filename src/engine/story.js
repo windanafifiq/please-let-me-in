@@ -4,6 +4,7 @@
 
 import { Inspection, VERDICT } from './inspection.js';
 import { getVisitors, DAY_SCHEDULE } from '../data/visitors.js';
+import { t } from '../i18n.js';
 
 export { VERDICT };
 
@@ -62,73 +63,30 @@ export class Story {
     // ===== PERFECT ENDING =====
     if (leaked === 0 && wrongReject === 0) {
       win = true;
-
-      title = 'Fajar yang Aman';
-
-      summary =
-        'Tidak ada satu pun kesalahan sepanjang shift. Mereka yang terinfeksi berhasil dihentikan sebelum memasuki gedung, sementara para penghuni yang sehat dapat kembali ke rumah mereka dengan aman.';
-
-      outro =
-        'Fajar tiba.\n\n' +
-        'Untuk pertama kalinya setelah berminggu-minggu, berita pagi membawa sedikit harapan.\n\n' +
-        'Pemerintah mengumumkan bahwa vaksin VRS-24 mulai didistribusikan ke berbagai kota. Jumlahnya masih terbatas, tetapi cukup untuk memberi harapan bahwa wabah ini tidak akan berlangsung selamanya.\n\n' +
-        'Di dalam gedung, para penghuni memulai hari seperti biasa.\n\n' +
-        'Anak-anak berangkat sekolah. Para pekerja bersiap menjalani shift mereka. Lampu-lampu apartemen menyala satu per satu tanpa ketakutan yang selama ini menyelimuti kota.\n\n' +
-        'Sebagian dari mereka tidak pernah tahu betapa dekatnya wabah dengan rumah mereka malam itu.\n\n' +
-        'Dan mereka memang tidak perlu tahu.\n\n' +
-        'Tugas seorang penjaga bukan menjadi pahlawan yang dikenang.\n\n' +
-        'Tugasnya adalah memastikan semua orang bisa menjalani hari esok.';
-
+      title = t('end.perfect.title');
+      summary = t('end.perfect.summary');
+      outro = t('end.perfect.outro');
     }
 
     // ===== WRONG REJECT ONLY =====
     else if (leaked === 0 && wrongReject > 0) {
-      title = 'Keputusan yang Salah';
-
-      summary =
-        `Tidak ada wabah yang masuk, tetapi ${wrongReject} penghuni sehat kau tolak karena kecurigaan yang keliru.`;
-
-      outro =
-        'Gedung memang tetap aman malam itu.\n\n' +
-        'Namun beberapa penghuni yang sehat terpaksa menghabiskan malam di luar tempat yang seharusnya menjadi rumah mereka.\n\n' +
-        'Keesokan harinya, kabar tentang keputusanmu menyebar dari pintu ke pintu.\n\n' +
-        'Tidak ada wabah yang masuk.\n\n' +
-        'Tetapi kepercayaan para penghuni mulai retak.';
-
+      title = t('end.reject.title');
+      summary = t('end.reject.summary').replace('{n}', wrongReject);
+      outro = t('end.reject.outro');
     }
 
     // ===== LEAKED ONLY =====
     else if (leaked > 0 && wrongReject === 0) {
-      title = 'Wabah Menembus Pintu';
-
-      summary =
-        `Kau meloloskan ${leaked} orang yang terinfeksi VRS-24. Pada awalnya tidak ada yang terlihat berbeda, tetapi wabah telah memasuki gedung.`;
-
-      outro =
-        'Beberapa jam kemudian laporan pertama masuk.\n\n' +
-        'Demam. Ruam. Mata merah.\n\n' +
-        'Sebelum fajar tiba, semakin banyak penghuni mulai menunjukkan gejala yang sama.\n\n' +
-        'VRS-24 menyebar jauh lebih cepat daripada yang diperkirakan.\n\n' +
-        'Keputusan yang tampak kecil malam itu menjadi awal dari sebuah wabah.';
-
+      title = t('end.leaked.title');
+      summary = t('end.leaked.summary').replace('{n}', leaked);
+      outro = t('end.leaked.outro');
     }
 
     // ===== WORST ENDING =====
     else {
-      title = 'Malam yang Gagal';
-
-      summary =
-        `Kau meloloskan ${leaked} orang yang terinfeksi dan menolak ${wrongReject} penghuni yang sebenarnya sehat.`;
-
-      outro =
-        'Menjelang fajar, laporan kasus pertama mulai berdatangan.\n\n' +
-        'Demam. Ruam. Mata merah.\n\n' +
-        'Di saat yang sama, beberapa penghuni yang sehat masih berada di luar gedung karena keputusanmu.\n\n' +
-        'Mereka yang seharusnya dilindungi justru dihukum.\n\n' +
-        'Mereka yang seharusnya dihentikan justru berhasil masuk.\n\n' +
-        'Ketika matahari terbit, tidak ada yang bisa disebut sebagai kemenangan.\n\n' +
-        'Malam itu, kau gagal di kedua sisi pintu.';
-
+      title = t('end.worst.title');
+      summary = t('end.worst.summary').replace('{l}', leaked).replace('{r}', wrongReject);
+      outro = t('end.worst.outro');
     }
 
     return {

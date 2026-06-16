@@ -1394,6 +1394,20 @@ body {
   display: inline-block;
 }
 
+.intro-skip-hint {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: var(--muted-2);
+  letter-spacing: .5px;
+  pointer-events: none;
+  transition: opacity .4s;
+  opacity: 0;
+}
+
 /* credit 3-column */
 .credit-head {
   font-family: 'Creepster', cursive;

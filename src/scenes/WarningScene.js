@@ -1,5 +1,5 @@
 // WarningScene.js — Peringatan kilatan cahaya (photosensitivity / epilepsy).
-// Tahan sampai pemain menekan "Lanjutkan".
+import { t } from '../i18n.js';
 
 export default class WarningScene extends Phaser.Scene {
   constructor() { super('WarningScene'); }
@@ -22,16 +22,13 @@ export default class WarningScene extends Phaser.Scene {
     root.innerHTML = `
       <div class="warn-screen">
         <div class="warn-card">
-          <div class="warn-ico">⚠</div>
-          <div class="warn-title">PERINGATAN</div>
+          <div class="warn-ico">${t('warn.ico')}</div>
+          <div class="warn-title">${t('warn.title')}</div>
           <div class="warn-body">
-            <p>Permainan ini mengandung <b>efek kilatan cahaya dan visual berkedip</b>
-            (petir, kilau, dan transisi cepat).</p>
-            <p>Jika kamu memiliki <b>epilepsi fotosensitif</b> atau sensitif terhadap
-            cahaya berkedip, mohon berhati-hati. Disarankan bermain di ruangan
-            dengan pencahayaan cukup dan beristirahat bila merasa tidak nyaman.</p>
+            <p>${t('warn.p1')}</p>
+            <p>${t('warn.p2')}</p>
           </div>
-          <button class="warn-btn" id="warn-next">LANJUTKAN</button>
+          <button class="warn-btn" id="warn-next">${t('warn.btn')}</button>
         </div>
       </div>
     `;
