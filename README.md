@@ -1,130 +1,95 @@
-<!-- # PLEASE, LET ME IN! — Lantai 7
+# Please, Let Me In!
 
-Visual-novel **observation-duty** bertema thriller wabah, ditenagai **4 Finite
-State Machine** yang saling memengaruhi. Kamu menjaga pintu Lantai 7: tiap hari
-orang mengetuk minta masuk. Sebagian sehat, sebagian membawa wabah, sebagian
-berbohong. **Wawancarai, desak, deduksi — lalu putuskan: terima atau tolak.**
+![Diagram Multi-FSM Please, Let Me In!](multi-fsm-let-me-in.png)
 
-Tugas Mata Kuliah Game Edukasi dan Simulasi — Informatika ITS 2026.
+**Genre:** *Simulation, Survival Horror, Visual Novel, Social Deduction*
 
-## Cara Menjalankan
-ES Modules → harus lewat HTTP server (bukan `file://`):
-```bash
-cd floor7-vn
-python3 -m http.server 8000   # buka http://localhost:8000
+## Deskripsi Game
+**Please, Let Me In!** adalah sebuah game simulasi menjadi penjaga rumah susun (Rusun) di mana kota tempat Rusun tersebut berada sedang mengalami *outbreak* wabah akibat kebocoran senjata biologis (*bioweapon*). Pemain bertugas menyaring setiap pengunjung yang ingin memasuki Rusun. Di tengah kepanikan kota, Anda harus mengecek secara teliti semua pengunjung yang masuk untuk memeriksa gejala fisik mereka guna mendeteksi apakah mereka terpapar virus *bioweapon* mematikan **VRS-24** atau tidak.
+
+Setiap pengunjung memiliki kondisi fisik dan motif yang berbeda-beda—ada yang benar-benar sehat, ada yang membawa wabah, dan ada pula yang mencoba berbohong demi perlindungan. Tugas utama Anda adalah melakukan interogasi, membuka pakaian penghalang, mengukur indikator kesehatan medis, dan membuat keputusan krusial: **TERIMA** atau **TOLAK**. Setiap keputusan Anda menentukan kelangsungan hidup para penghuni rumah susun.
+
+---
+
+## Mekanik Game
+
+### 1. Sistem Investigasi dan Pemeriksaan
+Setiap pengunjung yang datang membawa klaim atau alasan tersendiri untuk masuk. Pemain dapat melakukan serangkaian tindakan investigasi gratis tanpa batas kuota untuk memverifikasi klaim tersebut:
+* **Observasi Awal:** Mengamati penampilan luar pengunjung saat pertama kali datang.
+* **Membuka Penghalang Fisik (*Access Barrier*):** Beberapa pengunjung mengenakan pakaian tebal atau aksesoris (masker, syal, jaket, topi, kacamata, *hoodie*) yang menutupi gejala penyakit mereka. Pemain harus menyuruh mereka membukanya sebelum bisa memeriksa area tersebut.
+* **Pemeriksaan Medis:** Pemain dapat melakukan berbagai tes kesehatan fisik seperti:
+  * Mengukur suhu tubuh (mendeteksi demam).
+  * Memeriksa ruam kulit di lengan atau leher.
+  * Memeriksa kondisi mata (merah/berair).
+  * Mengukur tekanan darah.
+  * Memeriksa kerontokan rambut/kondisi kepala.
+
+### 2. Sistem Deduksi Medis (Buku Catatan Pemeriksaan)
+Pemain dibekali panduan medis untuk mengenali infeksi **VRS-24 (Cacar)**:
+* **Diagnosis Positif VRS-24:** Pengunjung dipastikan terinfeksi jika memiliki **Ruam Menyebar** (banyak bintik) + **Demam Tinggi** (suhu $\ge$ 37.5°C) + minimal **1 Gejala Pendukung** (seperti mata merah, tekanan darah rendah, wajah pucat, atau kebotakan mendadak).
+* **Jebakan Medis (*Red Herrings*):** Tidak semua gejala tunggal mengindikasikan infeksi. Gejala tertentu dapat disebabkan oleh kondisi non-menular lain (misalnya lelah/insomnia menyebabkan mata merah, cuaca panas menyebabkan suhu naik sedikit, alergi udang menyebabkan bintik tunggal, atau riwayat imunisasi). Pemain harus jeli melihat pola gejala secara keseluruhan.
+
+### 3. Alur Permainan dan Keputusan
+Game berjalan selama satu hari penuh dengan total **6 pengunjung unik**. Keputusan pemain tidak akan langsung dinilai di tempat (*fog of consequence*), sehingga menjaga ketegangan permainan. Rekapitulasi keakuratan semua keputusan baru akan diungkap sepenuhnya di akhir hari ketika hasil tes sebenarnya dibuka.
+
+---
+
+## Penjelasan FSM (Finite State Machine)
+
+Game ini ditenagai oleh **4 Finite State Machine (FSM)** independen yang saling memengaruhi untuk menggerakkan logika simulasi medis, interaksi, dan alur keputusan:
+
+```mermaid
+graph TD
+    subgraph HealthFSM ["1. HealthFSM (Tersembunyi)"]
+        H_sehat[sehat]
+        H_cacar[cacar]
+        H_kondisi[kondisi_lain]
+    end
+
+    subgraph AksesFSM ["2. AksesFSM (Penghalang Fisik)"]
+        A_tertutup[tertutup] -->|Buka Akses| A_terbuka[terbuka]
+    end
+
+    subgraph PemeriksaanFSM ["3. PemeriksaanFSM (Status Tes)"]
+        P_belum[belum] -->|Periksa| P_diperiksa[diperiksa]
+    end
+
+    subgraph VerdictFSM ["4. VerdictFSM (Keputusan)"]
+        V_memeriksa[memeriksa] -->|Terima| V_diterima[diterima]
+        V_memeriksa -->|Tolak| V_ditolak[ditolak]
+        V_diterima --> V_selesai[selesai]
+        V_ditolak --> V_selesai[selesai]
+    end
+
+    HealthFSM -->|Menentukan data gejala| PemeriksaanFSM
+    AksesFSM -->|Membuka akses pemeriksaan tertentu| PemeriksaanFSM
+    PemeriksaanFSM -->|Memberi info deduksi| VerdictFSM
 ```
 
-## Simulasi & Multi-FSM (inti tugas)
-Game ini memodelkan **skrining wabah di pintu** lewat 4 FSM:
+### 1. HealthFSM (FSM Kesehatan Tersembunyi)
+FSM ini merepresentasikan kondisi kesehatan "sebenarnya" dari tiap pengunjung. State ini tersembunyi dari pemain dan ditentukan di awal kedatangan pengunjung.
+* **State yang ada:**
+  * `sehat`: Pengunjung sehat walafiat, tidak memiliki gejala membahayakan.
+  * `cacar`: Pengunjung terinfeksi virus VRS-24. Wajib **ditolak**.
+  * `kondisi_lain`: Pengunjung tidak terinfeksi virus menular, namun memiliki penyakit lain (seperti *heat-stroke*, anemia, dll.) yang menunjukkan gejala mirip cacar. Wajib **diterima**.
+* **Peran:** Menentukan *output* atau data gejala mentah yang akan didapatkan pemain saat melakukan pemeriksaan fisik.
 
-1. **DemeanorFSM — sikap NPC saat diwawancara** (inti gameplay)
-   `tenang → defensif → mengelak → membuka / memberontak`
-   Tiap pertanyaan/desakan pemain adalah *input* yang memicu transisi. Minta KTP
-   ke orang tertutup → ia "mengelak" ("KTP saya hilang"). Desak halus → ia bisa
-   "membuka" (akhirnya jujur). Desak terlalu keras → "memberontak" (pergi).
-   Dialog & petunjuk yang muncul tergantung state ini.
+### 2. AksesFSM (FSM Penghalang Fisik)
+Mengontrol status pakaian atau aksesoris pelindung yang digunakan pengunjung untuk menutupi tubuh mereka.
+* **Transisi State:** `tertutup` $\xrightarrow{\text{minta buka}}$ `terbuka`
+* **Peran:** Berfungsi sebagai gerbang pengunci pemeriksaan. Sebagai contoh, pemeriksaan ruam kulit pada lengan berada di bawah kendali AksesFSM jaket; pemain tidak bisa melakukan cek ruam sebelum jaket dibuka.
 
-2. **HealthFSM — kondisi kesehatan tersembunyi tiap orang**
-   `sehat → terpapar → bergejala → kritis → pulih / meninggal`
-   State disembunyikan; pemeriksaan hanya mengungkap petunjuk ambigu. Orang yang
-   sudah kamu terima, FSM-nya **terus jalan tiap hari** di dalam gedung dan bisa
-   menulari penghuni lain — konsekuensi nyata dari keputusanmu.
+### 3. PemeriksaanFSM (FSM Status Pemeriksaan)
+Melacak status pemeriksaan medis untuk setiap indikator klinis pada pengunjung.
+* **Transisi State:** `belum` $\xrightarrow{\text{lakukan tes}}$ `diperiksa`
+* **Peran:** Mencatat apakah suatu pemeriksaan telah dilakukan atau belum. Begitu pemeriksaan berganti menjadi `diperiksa`, data klinis yang sesuai dengan `HealthFSM` akan dimasukkan ke dalam log catatan pemain untuk dianalisis.
 
-3. **BuildingFSM — kondisi gedung**
-   `normal → waspada → lockdown → chaos → evakuasi`
-   Naik berdasarkan jumlah wabah yang lolos & kematian.
+### 4. VerdictFSM (FSM Keputusan Akhir)
+Mengatur alur evaluasi pemain terhadap pengunjung yang sedang dihadapi.
+* **Transisi State:** `memeriksa` $\rightarrow$ (`diterima` atau `ditolak`) $\rightarrow$ `selesai`
+* **Peran:** Mengunci keputusan pemain (terima/tolak) lalu memicu evaluasi kebenaran keputusan tersebut terhadap status `HealthFSM` sesungguhnya sebelum melanjutkan ke pengunjung berikutnya.
 
-4. **TrustFSM — kepercayaan gedung**
-   `kooperatif → ragu → panik → hostile`
-   Salah usir orang sehat / loloskan wabah → kepercayaan turun, memengaruhi
-   keandalan info.
+---
 
-Diagram keempat FSM tersedia dalam format **draw.io** (lihat folder `docs/`,
-ditambahkan saat finishing).
-
-## Loop Gameplay
-1. Pengunjung muncul di tengah layar + transkrip dialog.
-2. **Wawancara bebas tanpa kuota:** tanya keperluan, tanya gejala, minta
-   identitas, periksa lengan, desak halus/keras, tenangkan, cek catatan gedung,
-   amati diam-diam. Tiap aksi menggerakkan DemeanorFSM & bisa membuka petunjuk.
-3. Petunjuk masuk ke **Catatan Pemeriksaan** dengan sinyal: bersih /
-   mencurigakan / tak pasti. **Tidak pernah pasti** — orang gugup bisa beri
-   sinyal palsu; pembohong bisa menyembunyikan sampai didesak.
-4. Putuskan **TERIMA** atau **TOLAK**. Kondisi sebenarnya baru terungkap setelah
-   keputusan → cerita bercabang.
-5. Antar hari, HealthFSM & BuildingFSM maju.
-
-## Kunci Deduksi
-- Orang **terinfeksi** biasanya punya ≥2 sinyal mencurigakan konsisten.
-- **Kontradiksi cerita** (cek catatan gedung) = sinyal terkuat.
-- Orang **mengelak** (mis. "KTP hilang") harus **didesak** dulu agar petunjuk
-  asli (lengan, pengakuan) terbuka — tapi desakan keras bisa bikin memberontak.
-- **Sehat ≠ aman:** ada penipu sehat yang berniat menjarah. Periksa identitas.
-
-## 5 Ending
-Ditentukan akurasi penilaian + wabah lolos + kematian + kepercayaan:
-Penjaga Tanpa Cela → Penjaga yang Bijak → Bertahan dengan Ragu →
-Pintu yang Salah → Gerbang Runtuh. Layar akhir menampilkan rekap tiap keputusan.
-
-## Struktur
-```
-index.html          entry point
-styles.css          tema VN/observation-duty
-src/
-  main.js           bootstrap Phaser
-  scenes/           BootScene, MenuScene, GameScene, EndScene
-  fsm/
-    DemeanorFSM.js       FSM sikap NPC (inti wawancara)
-    HealthFSM.js         FSM kesehatan tersembunyi
-    BuildingTrustFSM.js  FSM gedung + FSM kepercayaan
-  engine/
-    interview.js    mesin wawancara (menggerakkan DemeanorFSM, ungkap tell)
-    story.js        alur hari, majukan HealthFSM/BuildingFSM, ending
-  data/visitors.js  6 pengunjung: skrip dialog bercabang per-state + tells
-  ui.js             overlay: transkrip, indikator sikap, menu aksi, papan petunjuk
-assets/             taruh latar/potret/audio asli di sini (lihat README tiap folder)
-```
-
-## Belum dikerjakan (untuk finishing sebelum 20 Juni)
-- [ ] Halaman **KREDIT** (foto, email pembuat, teks tugas ITS 2026) — menu awal
-- [ ] **Diagram multi-FSM draw.io** di `docs/`
-- [ ] **Aset grafis & audio legal** (Storyblocks/Suno/Freesound) menggantikan
-      placeholder prosedural
-- [ ] **Video playdemo** YouTube (maks 5 menit)
-
-## Catatan Teknis
-Game berjalan tanpa aset eksternal (potret & latar prosedural di BootScene).
-Howler.js sudah dimuat & siap untuk SFX/BGM. Rasio 16:9 (Phaser FIT 1280×720),
-ada CSS mobile-friendly.
-
-## Alur Game (terbaru)
-Menu Utama → [Mulai Baru → Input Nama → Intro Cerita → Game] atau
-[Lanjutkan (jika ada save)] atau [Kredit]. Game: 5 pengunjung/hari × 3 hari = 15.
-Akhir: **2 ending** — MENANG (bertahan 3 hari tanpa meloloskan yang terinfeksi,
-ada outro antivirus ditemukan) / KALAH (begitu meloloskan satu yang terinfeksi).
-
-## Save / Continue
-Progres otomatis tersimpan (localStorage) tiap keputusan & pergantian hari.
-Tombol "Lanjutkan" muncul di menu jika ada save. Save terhapus saat game tamat.
-(Berfungsi saat game dijalankan via server lokal/web di browser pemain.)
-
-## Halaman Kredit
-3 kolom: Pembuat 1, Pembuat 2 (foto + nama + NRP + email), dan Dosen (nama + email),
-plus teks "Tugas Mata Kuliah Game Edukasi dan Simulasi — Informatika ITS 2026".
-Edit data di `src/scenes/CreditScene.js`; taruh foto di `assets/credits/`.
-
-## Foto Karakter & Ekspresi (FSM → visual)
-Taruh di `assets/portraits/` dengan nama `v01_neutral.png`, `v01_evade.png`,
-`v01_emote.png` (sampai v15). Wajah karakter otomatis berganti mengikuti
-state DemeanorFSM (neutral/evade/emote) — bukti visual FSM bekerja. Minimal
-cukup `_neutral` saja; varian lain opsional.
-
-## Desain Feedback Tersembunyi (fog of consequence)
-Keputusan terima/tolak TIDAK langsung diberi tahu benar/salah — pemain hanya
-melihat "pintu dibuka/ditutup" lalu lanjut ke orang berikutnya. Ini menjaga
-ketegangan & misteri ("siapa yang salah aku loloskan?").
-- Jika meloloskan orang terinfeksi: baru ketahuan saat pergantian hari lewat
-  kartu "wabah pecah semalam" → langsung ending KALAH.
-- Semua keputusan (benar/salah + kondisi asli tiap orang) baru diungkap penuh
-  di layar ending (recap). Ini juga memperkuat realisme simulasi skrining wabah:
-  konsekuensi muncul belakangan, seperti masa inkubasi penyakit nyata. -->
+## Akhir Permainan (Endings)
+Keputusan pemain dalam menyaring ke-6 pengunjung tersebut secara kumulatif akan menentukan akhir dari giliran jaga Anda. Terdapat beberapa variasi akhir cerita yang bisa Anda capai—mulai dari keberhasilan menjaga keamanan apartemen dengan sempurna, terjadinya kebocoran wabah akibat kelalaian pemeriksaan, penolakan yang tidak adil terhadap warga sehat, hingga akhir rahasia yang tidak terduga. Lakukan pemeriksaan dengan teliti dan jangan biarkan wabah masuk!
