@@ -42,28 +42,28 @@ Game ini ditenagai oleh **4 Finite State Machine (FSM)** independen yang saling 
 graph TD
     subgraph HealthFSM ["1. HealthFSM (Tersembunyi)"]
         H_sehat[sehat]
-        H_cacar[cacar]
-        H_kondisi[kondisi_lain]
+        H_sehat -->|Terinfeksi| H_cacar[VRS-24]
+        H_sehat -->|Punya Kondisi Lain| H_kondisi[kondisi_lain]
     end
 
     subgraph AksesFSM ["2. AksesFSM (Penghalang Fisik)"]
-        A_tertutup[tertutup] -->|Buka Akses| A_terbuka[terbuka]
+        A_tertutup[tertutup] -->|"open()"| A_terbuka[terbuka]
     end
 
     subgraph PemeriksaanFSM ["3. PemeriksaanFSM (Status Tes)"]
-        P_belum[belum] -->|Periksa| P_diperiksa[diperiksa]
+        P_belum[belum] -->|"examine()"| P_diperiksa[diperiksa]
     end
 
     subgraph VerdictFSM ["4. VerdictFSM (Keputusan)"]
-        V_memeriksa[memeriksa] -->|Terima| V_diterima[diterima]
-        V_memeriksa -->|Tolak| V_ditolak[ditolak]
+        V_memeriksa[memeriksa] -->|accept| V_diterima[diterima]
+        V_memeriksa -->|reject| V_ditolak[ditolak]
         V_diterima --> V_selesai[selesai]
         V_ditolak --> V_selesai[selesai]
     end
 
-    HealthFSM -->|Menentukan data gejala| PemeriksaanFSM
-    AksesFSM -->|Membuka akses pemeriksaan tertentu| PemeriksaanFSM
-    PemeriksaanFSM -->|Memberi info deduksi| VerdictFSM
+    AksesFSM -->|"gatedBy (buka dulu)"| PemeriksaanFSM
+    HealthFSM -->|"shouldBeRejected()"| VerdictFSM
+    PemeriksaanFSM -.->|"Data pemeriksaan dianalisis pemain"| VerdictFSM
 ```
 
 ### 1. HealthFSM (FSM Kesehatan Tersembunyi)
