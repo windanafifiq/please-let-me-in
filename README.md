@@ -63,7 +63,6 @@ graph TD
 
     AksesFSM -->|"gatedBy (buka dulu)"| PemeriksaanFSM
     HealthFSM -->|"shouldBeRejected()"| VerdictFSM
-    PemeriksaanFSM -.->|"Data pemeriksaan dianalisis pemain"| VerdictFSM
 ```
 
 ### 1. HealthFSM (FSM Kesehatan Tersembunyi)
