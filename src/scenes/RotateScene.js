@@ -13,6 +13,15 @@ export default class RotateScene extends Phaser.Scene {
   }
 
   create() {
+    // Skip jika Desktop (laptop/PC) ATAU jika sudah dalam mode lanskap (tidak perlu putar)
+    const isDesktop = this.sys.game.device.os.desktop;
+    const isLandscape = this.scale.orientation === Phaser.Scale.LANDSCAPE;
+
+    if (isDesktop || isLandscape) {
+      this.scene.start('WarningScene');
+      return;
+    }
+
     const W = this.scale.width, H = this.scale.height;
     this.cameras.main.fadeIn(250);
     this.add.rectangle(W / 2, H / 2, W, H, 0x0a0810, 1);
